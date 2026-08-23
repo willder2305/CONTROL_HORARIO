@@ -36,13 +36,14 @@ namespace ControlHorarioBiometricAgent
 
         public static void Main(string[] args)
         {
+            Log("Agente iniciado");
             Config = LoadConfig();
             Config.BridgePath = ResolvePath(Config.BridgePath);
 
             if (!Config.ListenUrl.StartsWith("http://127.0.0.1:", StringComparison.OrdinalIgnoreCase)
                 && !Config.ListenUrl.StartsWith("http://localhost:", StringComparison.OrdinalIgnoreCase))
             {
-                Console.Error.WriteLine("ListenUrl debe apuntar a 127.0.0.1 o localhost.");
+                Log("ListenUrl debe apuntar a 127.0.0.1 o localhost.");
                 Environment.Exit(2);
             }
 
@@ -54,7 +55,7 @@ namespace ControlHorarioBiometricAgent
             var listener = new HttpListener();
             listener.Prefixes.Add(Config.ListenUrl);
             listener.Start();
-            Console.WriteLine("ControlHorarioBiometricAgent escuchando en " + Config.ListenUrl);
+            Log("ControlHorarioBiometricAgent escuchando en " + Config.ListenUrl);
 
             while (true)
             {
@@ -150,10 +151,13 @@ namespace ControlHorarioBiometricAgent
                     WriteJson(context, 200, new Dictionary<string, object>
                     {
                         { "success", true },
+                        { "service", "running" },
+                        { "version", "1.0.0" },
                         { "data", new Dictionary<string, object> {
                             { "service", "ControlHorarioBiometricAgent" },
                             { "status", "running" },
-                            { "deviceId", Config.DeviceId }
+                            { "deviceId", Config.DeviceId },
+                            { "version", "1.0.0" }
                         }}
                     });
                     return;
@@ -543,6 +547,37 @@ namespace ControlHorarioBiometricAgent
         private static void SafeDelete(string path)
         {
             try { if (File.Exists(path)) File.Delete(path); } catch { }
+        }
+
+
+        private static void Log(string message)
+        {
+            try
+            {
+                var root = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "ControlHorarioBiometricAgent", "logs");
+                Directory.CreateDirectory(root);
+                var path = Path.Combine(root, "agent.log");
+                RotateLog(path);
+                File.AppendAllText(path, DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + " " + message + Environment.NewLine, Encoding.UTF8);
+            }
+            catch
+            {
+            }
+        }
+
+        private static void RotateLog(string path)
+        {
+            try
+            {
+                var file = new FileInfo(path);
+                if (!file.Exists || file.Length < 1024 * 1024) return;
+                var rotated = path + ".1";
+                if (File.Exists(rotated)) File.Delete(rotated);
+                File.Move(path, rotated);
+            }
+            catch
+            {
+            }
         }
     }
 }
