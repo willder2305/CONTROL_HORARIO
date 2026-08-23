@@ -31,6 +31,8 @@ class Config:
     PERMANENT_SESSION_LIFETIME = timedelta(hours=8)
     MAX_CONTENT_LENGTH = int(os.getenv("MAX_CONTENT_LENGTH", str(2 * 1024 * 1024)))
     CSRF_PROTECT = os.getenv("CSRF_PROTECT", "true").lower() == "true"
+    APP_URL = os.getenv("APP_URL", "http://127.0.0.1:5000")
+    BIOMETRIC_AGENT_TOKEN = os.getenv("BIOMETRIC_AGENT_TOKEN", "")
     FINGERPRINT_PROVIDER = os.getenv("FINGERPRINT_PROVIDER", "mock")
     ZKTECO_DEVICE_INDEX = int(os.getenv("ZKTECO_DEVICE_INDEX", "0"))
     ZKTECO_CAPTURE_TIMEOUT_SECONDS = int(os.getenv("ZKTECO_CAPTURE_TIMEOUT_SECONDS", "30"))

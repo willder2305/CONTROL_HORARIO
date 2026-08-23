@@ -24,6 +24,7 @@ def create_app(config_class=Config):
     register_security(app)
 
     from app.routes.health import health_bp
+    from app.routes.agent import agent_bp
     from app.routes.auth import auth_bp
     from app.routes.biometria import biometria_bp
     from app.routes.horarios import horarios_bp
@@ -34,6 +35,7 @@ def create_app(config_class=Config):
     from app.commands import register_commands
 
     app.register_blueprint(health_bp, url_prefix="/api")
+    app.register_blueprint(agent_bp, url_prefix="/api/agent")
     app.register_blueprint(auth_bp, url_prefix="/api/auth")
     app.register_blueprint(biometria_bp, url_prefix="/api/biometria")
     app.register_blueprint(horarios_bp, url_prefix="/api/admin/horarios")

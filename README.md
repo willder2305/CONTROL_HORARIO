@@ -451,3 +451,86 @@ Checklist revisado:
 - Pruebas integrales.
 
 No se avanza a FASE 21 desde esta fase.
+
+## PRUEBA LOCAL CON ZK9500
+
+Arquitectura local de validacion:
+
+- Backend Flask: `http://127.0.0.1:5000`
+- Frontend React: `http://127.0.0.1:5173`
+- ControlHorarioBiometricAgent: `http://127.0.0.1:8765`
+- MySQL local
+- ZKTeco ZK9500 por USB
+
+Orden de inicio:
+
+1. Iniciar MySQL.
+2. Iniciar backend Flask en `http://127.0.0.1:5000`.
+3. Iniciar frontend React en `http://127.0.0.1:5173`.
+4. Iniciar `ControlHorarioBiometricAgent`.
+5. Conectar el ZKTeco ZK9500.
+6. Comprobar `GET http://127.0.0.1:8765/health`.
+7. Comprobar `GET http://127.0.0.1:8765/device/status`.
+8. Abrir el sistema local.
+9. Registrar huella real.
+10. Probar marcacion automatica.
+
+Variables locales esperadas:
+
+Frontend `frontend/.env`:
+
+```env
+VITE_API_URL=http://127.0.0.1:5000/api
+VITE_BIOMETRIC_MODE=local-agent
+VITE_BIOMETRIC_AGENT_URL=http://127.0.0.1:8765
+```
+
+Backend `backend/.env`:
+
+```env
+FINGERPRINT_PROVIDER=local_agent
+BIOMETRIC_AGENT_TOKEN=local-agent-dev-token
+APP_URL=http://127.0.0.1:5000
+CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+```
+
+Agente `local-agent/appsettings.json` o `local-agent/appsettings.example.json`:
+
+```json
+{
+  "ListenUrl": "http://127.0.0.1:8765/",
+  "ServerUrl": "http://127.0.0.1:5000",
+  "AllowedOrigins": ["http://localhost:5173", "http://127.0.0.1:5173"],
+  "DeviceToken": "local-agent-dev-token",
+  "BridgePath": "..\..\backend\zk9500_bridge\bin\Zk9500Bridge.exe"
+}
+```
+
+El agente solo debe escuchar en `127.0.0.1`. No usar `0.0.0.0`.
+
+Estados esperados:
+
+- `/health` confirma que el agente esta vivo.
+- `/device/status` confirma si el SDK y ZK9500 estan realmente disponibles.
+- Si `/health` falla: iniciar o instalar Control Horario Biometric Agent.
+- Si `/health` responde pero `connected=false`: conectar el ZKTeco ZK9500.
+- Si `sdkLoaded=false`: instalar driver/runtime oficial ZKTeco.
+
+Pruebas fisicas pendientes para ejecutar con el lector:
+
+1. Conectar ZK9500.
+2. Abrir `/device/status` y confirmar `connected=true` y `ready=true`.
+3. Crear trabajador desde el panel administrativo.
+4. Registrar huella con tres capturas reales del mismo dedo.
+5. Confirmar que el trabajador queda activo y con huella registrada.
+6. Abrir `/marcar`.
+7. Presionar MARCAR.
+8. Colocar el mismo dedo.
+9. Confirmar identificacion del trabajador correcto.
+10. Confirmar que el backend registra automaticamente Entrada.
+11. Repetir marcacion y confirmar la siguiente funcion segun el horario.
+12. Probar dedo no registrado y confirmar que no crea marcacion.
+13. Cerrar el agente y confirmar mensaje de servicio biometrico no disponible.
+14. Apagar backend con agente activo y confirmar mensaje de no conexion con el sistema.
+
+Esta rama `uso-local` es para prueba local. No requiere dominio ni HTTPS local.

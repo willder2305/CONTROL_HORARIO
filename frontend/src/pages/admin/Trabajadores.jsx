@@ -29,6 +29,11 @@ export default function Trabajadores() {
   const [fingerprintModal, setFingerprintModal] = useState(null);
   const isEditing = useMemo(() => Boolean(form.id), [form.id]);
   const isMockMode = readerStatus?.provider === 'mock';
+  const isPhysicalReader = ['zk9500', 'local_agent'].includes(readerStatus?.provider);
+
+  function updateFingerprintProgress(body) {
+    setFingerprintModal((current) => (current ? { ...current, body } : current));
+  }
 
   async function loadWorkers(params = filters) {
     setLoading(true);
@@ -91,16 +96,14 @@ export default function Trabajadores() {
       }
       setFingerprintModal({
         title: 'Registrar huella',
-        body: isMockMode
-          ? 'Validando huella de desarrollo...'
-          : 'Coloque el mismo dedo sobre el ZK9500. El sistema capturará 3 muestras.',
+        body: isMockMode ? 'Validando huella de desarrollo...' : 'Comprobando lector...',
       });
     }
 
     try {
       const response = isEditing
         ? await updateTrabajador(form.id, payload)
-        : await createTrabajador(payload);
+        : await createTrabajador(payload, { onProgress: updateFingerprintProgress });
       setMessage(response.message);
       setForm(initialForm);
       await loadWorkers();
@@ -144,7 +147,7 @@ export default function Trabajadores() {
 
   async function registerFingerprint(worker) {
     const fingerprintId = isMockMode
-      ? window.prompt(`Identificación biométrica de desarrollo para ${worker.codigo}.`, '')
+      ? window.prompt(`Identificacion biometrica de desarrollo para ${worker.codigo}.`, '')
       : '';
 
     if (fingerprintId === null) return;
@@ -153,13 +156,11 @@ export default function Trabajadores() {
     setMessage('');
     setFingerprintModal({
       title: 'Registrar huella',
-      body: isMockMode
-        ? 'Validando huella de desarrollo...'
-        : 'Coloque el mismo dedo sobre el ZK9500. El sistema capturará 3 muestras.',
+      body: isMockMode ? 'Validando huella de desarrollo...' : 'Comprobando lector...',
     });
 
     try {
-      const response = await registrarHuella(worker.id, fingerprintId);
+      const response = await registrarHuella(worker.id, fingerprintId, { onProgress: updateFingerprintProgress });
       setMessage(response.message);
       await loadWorkers();
       await loadReaderStatus();
@@ -198,11 +199,11 @@ export default function Trabajadores() {
           <form className="content-panel worker-form" onSubmit={handleSubmit}>
             <h2>{isEditing ? 'Editar trabajador' : 'Crear trabajador'}</h2>
             <label>
-              Código
+              Codigo
               <input
                 type="text"
                 name="codigo"
-                placeholder="Automático"
+                placeholder="Automatico"
                 value={form.codigo}
                 onChange={handleFormChange}
               />
@@ -232,10 +233,10 @@ export default function Trabajadores() {
               <section className="fingerprint-required-panel">
                 <h3>Huella digital</h3>
                 <p className="muted">
-                  ○ Huella no registrada. Para crear un trabajador activo debe registrar una huella.
+                  Huella no registrada. Para crear un trabajador activo debe registrar una huella.
                 </p>
                 <p className="muted">
-                  Lector: {readerStatus?.provider === 'zk9500' ? 'ZKTeco ZK9500' : 'Modo desarrollo'}
+                  Lector: {isPhysicalReader ? 'ZKTeco ZK9500' : 'Modo desarrollo'}
                 </p>
                 {isMockMode && (
                   <label>
@@ -280,7 +281,7 @@ export default function Trabajadores() {
                   name="q"
                   value={filters.q}
                   onChange={handleFilterChange}
-                  placeholder="Código, nombre o apellido"
+                  placeholder="Codigo, nombre o apellido"
                 />
               </label>
               <label>
@@ -308,7 +309,7 @@ export default function Trabajadores() {
                 <table>
                   <thead>
                     <tr>
-                      <th>Código</th>
+                      <th>Codigo</th>
                       <th>Nombre</th>
                       <th>Apellido</th>
                       <th>Estado</th>
@@ -374,7 +375,9 @@ export default function Trabajadores() {
             <section className="modal-panel">
               <h2>{fingerprintModal.title}</h2>
               <p className="reader-title">ZKTeco ZK9500</p>
-              <p className="success-message">✓ Lector conectado</p>
+              {fingerprintModal.body.includes('conectado') && (
+                <p className="success-message">Lector conectado</p>
+              )}
               <p>{fingerprintModal.body}</p>
               <p className="muted">Capturas requeridas: 1 de 3, 2 de 3 y 3 de 3.</p>
               <p className="muted">Retire el dedo entre cada captura.</p>

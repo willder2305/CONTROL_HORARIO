@@ -27,3 +27,7 @@ Thumbs.db
 
 # Diagnostic bridge variants
 backend/zk9500_bridge/bin_x64/
+# Local biometric agent runtime
+local-agent/appsettings.json
+local-agent/logs/
+local-agent/runtime/
