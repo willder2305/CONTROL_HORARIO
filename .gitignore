@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+backend/.venv/
+
+# Node / Vite
+frontend/node_modules/
+frontend/dist/
+frontend/vite-cache/
+frontend/node_modules/.vite/
+
+# Local environment
+.env
+backend/.env
+frontend/.env
+
+# Local output and temporary files
+output/
+.playwright-cli/
+
+# IDE / OS
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
+
+# Diagnostic bridge variants
+backend/zk9500_bridge/bin_x64/

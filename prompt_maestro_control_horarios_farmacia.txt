@@ -1,0 +1,2620 @@
+PROMPT MAESTRO PARA CODEX
+
+SISTEMA WEB DE CONTROL DE HORARIOS CON LECTOR DE HUELLAS PARA FARMACIA
+
+Actúa como un Arquitecto de Software, Desarrollador Full Stack Senior, especialista en Python Flask, React, MySQL, seguridad web, sistemas de control de asistencia e integración con lectores biométricos.
+
+Necesito desarrollar un sistema web para una farmacia destinado al:
+
+CONTROL DE HORARIOS DE TRABAJADORES MEDIANTE LECTOR DE HUELLAS DIGITALES.
+
+El sistema debe desarrollarse utilizando:
+
+- Python Flask para backend.
+- React + Vite para frontend.
+- MySQL para base de datos.
+- Lector de huellas digitales para identificación de trabajadores.
+- openpyxl para Excel.
+- ReportLab para PDF.
+
+El frontend debe ser sencillo, moderno, limpio, responsive y fácil de utilizar.
+TODAS las vistas deberán adaptarse correctamente a escritorio, laptop, tablet y móvil.
+
+REGLA GENERAL DE DESARROLLO
+
+EL PROYECTO DEBE DESARROLLARSE ESTRICTAMENTE POR FASES.
+
+Las fases estarán claramente identificadas como:
+
+FASE 1
+FASE 2
+FASE 3
+FASE 4
+
+etc.
+
+Cuando se solicite:
+
+"Ejecuta la FASE 1"
+
+debes realizar solamente la FASE 1.
+
+NO DEBES avanzar automáticamente a la FASE 2.
+
+Cuando se solicite:
+
+"Ejecuta la FASE 2"
+
+debes trabajar únicamente en esa fase e integrarla con todo lo anteriormente realizado.
+
+Esta regla debe mantenerse durante TODO el proyecto.
+
+1. OBJETIVO DEL SISTEMA
+
+El sistema permitirá registrar mediante huella digital:
+
+1. Entrada al trabajo.
+2. Salida a almuerzo.
+3. Regreso de almuerzo.
+4. Salida del trabajo.
+
+Cada marcación deberá registrar automáticamente:
+
+- Trabajador identificado.
+- Fecha.
+- Hora.
+- Tipo de marcación.
+- Horario que tenía asignado.
+- Estado de puntualidad.
+- Minutos de atraso o anticipación.
+- Fecha y hora exactas del servidor.
+
+2. HORA OFICIAL DEL SISTEMA
+
+ESTA ES UNA REGLA CRÍTICA.
+
+La hora de una marcación NO será:
+
+- Escrita por el trabajador.
+- Seleccionada por el trabajador.
+- Enviada desde React.
+- Tomada del reloj JavaScript del navegador.
+- Modificable desde el frontend.
+
+La hora deberá ser obtenida EXCLUSIVAMENTE en el backend Flask usando la hora del sistema.
+
+Configurar:
+
+America/Guatemala
+
+como zona horaria.
+
+Conceptualmente:
+
+ahora = obtener_hora_actual_guatemala()
+
+Cuando el trabajador coloque la huella:
+
+HUELLA IDENTIFICADA
+        ↓
+BACKEND OBTIENE HORA DEL SISTEMA
+        ↓
+BACKEND REGISTRA MARCACIÓN
+
+React nunca deberá mandar algo como:
+
+{
+    "hora": "08:00"
+}
+
+La API únicamente deberá recibir el tipo de marcación solicitado.
+
+3. PANTALLA PRINCIPAL
+
+Al ingresar al sistema mostrar:
+
+¿CÓMO DESEA INGRESAR?
+
+Dos botones grandes:
+
+[ ADMINISTRADOR ]
+
+[ TRABAJADOR ]
+
+4. ADMINISTRADOR
+
+Al seleccionar Administrador:
+
+/admin/login
+
+Solicitar:
+
+- Usuario.
+- Contraseña.
+
+El administrador sí necesita autenticarse.
+
+5. TRABAJADOR
+
+Al seleccionar Trabajador:
+
+/marcar
+
+NO solicitar:
+
+- Usuario.
+- Contraseña.
+- Código.
+- Nombre.
+- ID.
+
+La identificación será realizada exclusivamente mediante la huella digital.
+
+6. FUNCIONES DEL ADMINISTRADOR
+
+El administrador deberá poder:
+
+- Crear trabajadores.
+- Editar trabajadores.
+- Activar trabajadores.
+- Desactivar trabajadores.
+- Consultar trabajadores.
+- Registrar huella.
+- Volver a registrar huella.
+- Asignar horarios individuales.
+- Modificar horarios.
+- Consultar marcaciones.
+- Consultar tardanzas.
+- Consultar salidas anticipadas.
+- Aplicar filtros.
+- Generar reportes.
+- Descargar Excel.
+- Descargar PDF.
+- Consultar reportes directamente en el sistema.
+
+7. HORARIOS DE LOS TRABAJADORES
+
+Los horarios deben ser CONFIGURABLES POR EL ADMINISTRADOR.
+
+NO asumir que todos los trabajadores necesariamente tendrán siempre el mismo horario.
+
+El administrador podrá asignar a cada trabajador:
+
+- Hora de entrada.
+- Hora de salida a almuerzo.
+- Hora de regreso de almuerzo.
+- Hora de salida.
+- Tolerancia de entrada.
+- Tolerancia de regreso de almuerzo.
+
+8. HORARIO INICIAL DE LA FARMACIA
+
+Los valores predeterminados serán:
+
+Entrada:
+08:00 AM
+
+Salida:
+06:00 PM
+18:00
+
+Existen inicialmente dos posibilidades de almuerzo.
+
+Almuerzo tipo 1:
+Salida a almuerzo: 12:45
+Regreso de almuerzo: 13:45
+
+Almuerzo tipo 2:
+Salida a almuerzo: 13:45
+Regreso de almuerzo: 14:45
+
+Sin embargo, estos valores deben poder modificarse desde administración.
+
+9. ASIGNACIÓN INDIVIDUAL DE HORARIOS
+
+Al crear o editar un trabajador mostrar una sección:
+
+HORARIO DE TRABAJO
+
+Campos:
+
+Hora de entrada
+[ 08:00 ]
+
+Salida a almuerzo
+[ 12:45 ]
+
+Regreso de almuerzo
+[ 13:45 ]
+
+Hora de salida
+[ 18:00 ]
+
+Tolerancia entrada
+[ 0 minutos ]
+
+Tolerancia regreso almuerzo
+[ 0 minutos ]
+
+Otro trabajador podría tener:
+
+Entrada: 09:00
+Salida almuerzo: 13:45
+Regreso almuerzo: 14:45
+Salida: 18:00
+
+Por lo tanto:
+
+LA PUNTUALIDAD DEBE CALCULARSE CONTRA EL HORARIO ASIGNADO AL TRABAJADOR.
+
+NO contra un horario global escrito directamente en el código.
+
+10. PLANTILLAS DE HORARIO
+
+Además de horarios individuales, permitir crear plantillas.
+
+Ejemplo:
+
+HORARIO A
+Entrada: 08:00
+Almuerzo: 12:45
+Regreso: 13:45
+Salida: 18:00
+
+HORARIO B
+Entrada: 08:00
+Almuerzo: 13:45
+Regreso: 14:45
+Salida: 18:00
+
+El administrador podrá asignar una plantilla a un trabajador.
+
+Posteriormente podrá modificar individualmente el horario si es necesario.
+
+11. HISTORIAL DE HORARIOS
+
+IMPORTANTE:
+
+Si un trabajador tenía:
+
+Entrada: 08:00
+
+durante agosto y el administrador cambia posteriormente su entrada a:
+
+09:00
+
+los registros anteriores NO deben recalcularse utilizando 09:00.
+
+Cada marcación deberá guardar también la hora programada correspondiente a ese momento.
+
+Ejemplo:
+
+Fecha: 15/08/2026
+Marcación: 08:13
+Hora programada: 08:00
+Tardanza: 13 minutos
+
+Aunque posteriormente el horario del trabajador sea modificado, ese registro histórico debe permanecer igual.
+
+12. SECUENCIA OBLIGATORIA DE MARCACIONES
+
+ESTA REGLA ES FUNDAMENTAL.
+
+Las marcaciones dependerán unas de otras.
+
+La secuencia válida será:
+
+ENTRADA
+   ↓
+SALIDA_ALMUERZO
+   ↓
+REGRESO_ALMUERZO
+   ↓
+SALIDA
+
+No permitir saltarse pasos.
+
+13. REGLA DE ENTRADA
+
+La primera marcación debe ser:
+
+ENTRADA
+
+Si todavía no existe Entrada, el sistema no deberá permitir:
+
+SALIDA_ALMUERZO
+REGRESO_ALMUERZO
+SALIDA
+
+14. REGLA DE SALIDA A ALMUERZO
+
+Para poder registrar:
+
+SALIDA_ALMUERZO
+
+debe existir primero:
+
+ENTRADA
+
+del mismo trabajador y del mismo día.
+
+Es decir:
+
+ENTRADA ✓
+↓
+SALIDA_ALMUERZO ✓
+
+Pero:
+
+SIN ENTRADA
+↓
+SALIDA_ALMUERZO ✗
+
+Mostrar:
+
+No puede registrar salida a almuerzo porque aún no ha marcado su entrada.
+
+15. REGLA DE REGRESO DE ALMUERZO
+
+Para registrar:
+
+REGRESO_ALMUERZO
+
+debe existir previamente:
+
+SALIDA_ALMUERZO
+
+del mismo día.
+
+Correcto:
+
+ENTRADA
+↓
+SALIDA_ALMUERZO
+↓
+REGRESO_ALMUERZO
+
+Incorrecto:
+
+ENTRADA
+↓
+REGRESO_ALMUERZO
+
+Mostrar:
+
+No puede registrar regreso de almuerzo porque aún no ha marcado su salida a almuerzo.
+
+16. REGLA DE SALIDA
+
+Para registrar:
+
+SALIDA
+
+deberá existir:
+
+ENTRADA
+
+y, si el trabajador tiene horario de almuerzo asignado, también deberán haberse completado:
+
+SALIDA_ALMUERZO
+REGRESO_ALMUERZO
+
+Secuencia normal:
+
+ENTRADA
+↓
+SALIDA_ALMUERZO
+↓
+REGRESO_ALMUERZO
+↓
+SALIDA
+
+No permitir:
+
+SALIDA
+
+sin:
+
+ENTRADA
+
+Mostrar:
+
+No puede registrar salida porque no existe una entrada registrada para hoy.
+
+17. EVITAR MARCACIONES DUPLICADAS
+
+Un trabajador solamente puede tener una marcación de cada tipo durante la jornada normal.
+
+Ejemplo:
+
+Si Juan ya marcó:
+
+ENTRADA
+07:58
+
+y vuelve a seleccionar Entrada:
+
+No se puede registrar.
+
+Ya existe una entrada registrada hoy a las 07:58 AM.
+
+Debe existir una restricción única lógica basada en:
+
+trabajador_id
+fecha
+tipo_marcacion
+
+Además de la validación del backend.
+
+18. TIPOS DE MARCACIÓN
+
+Utilizar constantes o enum:
+
+ENTRADA
+SALIDA_ALMUERZO
+REGRESO_ALMUERZO
+SALIDA
+
+No utilizar textos diferentes para representar lo mismo.
+
+19. VISTA DEL TRABAJADOR
+
+La pantalla debe ser sencilla.
+
+Ejemplo:
+
+-----------------------------------
+
+       CONTROL DE HORARIOS
+
+       15/08/2026
+         11:45 AM
+
+    ¿Qué desea registrar?
+
+
+        [ ENTRADA ]
+
+
+    [ SALIDA A ALMUERZO ]
+
+
+   [ REGRESO DE ALMUERZO ]
+
+
+         [ SALIDA ]
+
+-----------------------------------
+
+20. MEJORA DE LA VISTA TRABAJADOR
+
+Después de identificar mediante huella al trabajador, el backend puede determinar cuál es la próxima marcación válida.
+
+Ejemplo:
+
+Si ya existe:
+
+ENTRADA
+
+pero no:
+
+SALIDA_ALMUERZO
+
+el sistema podrá indicar:
+
+Próxima marcación esperada:
+
+SALIDA A ALMUERZO
+
+Esto no reemplaza las validaciones backend.
+
+21. FLUJO DE MARCACIÓN
+
+Trabajador selecciona tipo
+          ↓
+Sistema solicita huella
+          ↓
+Trabajador coloca dedo
+          ↓
+Lector obtiene huella
+          ↓
+Backend identifica trabajador
+          ↓
+¿Trabajador activo?
+          ↓
+Sí
+          ↓
+Backend obtiene HORA DEL SISTEMA
+          ↓
+Consulta horario asignado
+          ↓
+Consulta marcaciones del día
+          ↓
+Valida secuencia
+          ↓
+Valida duplicados
+          ↓
+Obtiene hora programada
+          ↓
+Calcula puntualidad
+          ↓
+Registra marcación
+          ↓
+Muestra resultado
+
+22. CÁLCULO DE ENTRADA
+
+Ejemplo:
+
+Horario trabajador:
+08:00
+
+Marcación:
+07:54
+
+Resultado:
+A_TIEMPO
+
+Marcación:
+08:00
+
+Resultado:
+A_TIEMPO
+
+Marcación:
+08:13
+
+Resultado:
+TARDANZA
+13 minutos
+
+23. TOLERANCIAS
+
+El administrador podrá asignar tolerancia.
+
+Ejemplo:
+
+Entrada: 08:00
+Tolerancia: 5 minutos
+
+Entonces:
+
+08:00 → A TIEMPO
+08:03 → A TIEMPO
+08:05 → A TIEMPO
+08:06 → TARDANZA DE 1 MINUTO
+
+La diferencia de tardanza deberá calcularse utilizando el límite correspondiente.
+
+24. SALIDA A ALMUERZO
+
+Ejemplo:
+
+Horario:
+12:45
+
+Si marca antes:
+ANTICIPADO
+
+Si marca a la hora:
+A_TIEMPO
+
+Si marca después:
+puede registrarse la diferencia correspondiente.
+
+Guardar:
+
+hora_programada
+hora_real
+minutos_diferencia
+
+25. REGRESO DE ALMUERZO
+
+Ejemplo:
+
+Regreso:
+13:45
+
+Marcación:
+13:40
+
+Resultado:
+A_TIEMPO
+
+Marcación:
+13:45
+
+Resultado:
+A_TIEMPO
+
+Marcación:
+13:53
+
+Resultado:
+TARDANZA
+8 minutos
+
+26. SALIDA
+
+Ejemplo:
+
+Hora de salida:
+18:00
+
+Marcación:
+17:45
+
+Resultado:
+SALIDA_ANTICIPADA
+15 minutos
+
+Marcación:
+18:00
+
+Resultado:
+A_TIEMPO
+
+Marcación:
+18:15
+
+Resultado:
+A_TIEMPO
+
+27. MOTOR DE REGLAS DE ASISTENCIA
+
+Crear:
+
+backend/app/services/attendance_service.py
+
+Toda la lógica relacionada con horarios debe vivir aquí.
+
+Crear funciones equivalentes a:
+
+obtener_hora_sistema()
+obtener_horario_trabajador()
+obtener_marcaciones_dia()
+obtener_proxima_marcacion()
+validar_secuencia()
+validar_duplicado()
+obtener_hora_programada()
+calcular_estado()
+calcular_diferencia_minutos()
+registrar_marcacion()
+
+NO duplicar estas reglas en las rutas Flask.
+
+28. USUARIOS
+
+Cada trabajador deberá tener:
+
+ID
+Código
+Nombre
+Apellido
+Estado
+Horario asignado
+Huella registrada
+Fecha creación
+Fecha modificación
+
+Código automático:
+
+EMP-0001
+EMP-0002
+EMP-0003
+
+29. REGISTRO DE HUELLA
+
+El administrador deberá poder:
+
+Registrar huella
+
+desde la ficha del trabajador.
+
+No guardar fotografías de huellas.
+
+Guardar únicamente el template biométrico requerido por el SDK cuando el dispositivo real lo permita.
+
+Mantener biometría separada:
+
+services/
+└── fingerprint/
+    ├── base.py
+    ├── mock_provider.py
+    └── real_provider.py
+
+30. LECTOR SIMULADO
+
+Hasta disponer del modelo exacto del lector:
+
+FINGERPRINT_PROVIDER=mock
+
+Implementar:
+
+MockFingerprintProvider
+
+Posteriormente:
+
+FINGERPRINT_PROVIDER=real
+
+usará:
+
+RealFingerprintProvider
+
+NO inventar SDK, drivers o librerías de un lector que todavía no se conoce.
+
+31. INTERFAZ DEL PROVEEDOR BIOMÉTRICO
+
+Crear algo similar:
+
+class FingerprintProvider:
+
+    def enroll(self):
+        pass
+
+    def identify(self):
+        pass
+
+    def verify(self):
+        pass
+
+El módulo de asistencia no debe depender directamente de la marca del lector.
+
+32. MODELO DE BASE DE DATOS
+
+Crear como mínimo:
+
+administradores
+trabajadores
+plantillas_horario
+horarios_trabajadores
+huellas
+marcaciones
+auditoria
+
+33. ADMINISTRADORES
+
+Campos sugeridos:
+
+id
+usuario
+password_hash
+nombre
+apellido
+activo
+ultimo_login
+created_at
+updated_at
+
+34. TRABAJADORES
+
+id
+codigo
+nombre
+apellido
+activo
+created_at
+updated_at
+
+35. PLANTILLAS DE HORARIO
+
+Tabla:
+
+plantillas_horario
+
+Campos:
+
+id
+nombre
+hora_entrada
+hora_salida_almuerzo
+hora_regreso_almuerzo
+hora_salida
+tolerancia_entrada
+tolerancia_regreso_almuerzo
+activo
+created_at
+updated_at
+
+36. HORARIOS DE TRABAJADORES
+
+Crear:
+
+horarios_trabajadores
+
+para poder mantener historial.
+
+Campos sugeridos:
+
+id
+trabajador_id
+plantilla_id
+hora_entrada
+hora_salida_almuerzo
+hora_regreso_almuerzo
+hora_salida
+tolerancia_entrada
+tolerancia_regreso_almuerzo
+fecha_inicio
+fecha_fin
+activo
+created_at
+updated_at
+
+Esto permitirá conocer qué horario tenía un trabajador en una fecha determinada.
+
+37. TABLA HUELLAS
+
+id
+trabajador_id
+template_biometrico
+proveedor
+version
+activa
+created_at
+updated_at
+
+Nunca devolver:
+
+template_biometrico
+
+en APIs normales del frontend.
+
+38. TABLA MARCACIONES
+
+Campos:
+
+id
+trabajador_id
+fecha
+fecha_hora
+tipo_marcacion
+hora_programada
+hora_real
+estado
+minutos_diferencia
+horario_trabajador_id
+origen
+observacion
+created_at
+
+La hora real deberá derivarse de:
+
+fecha_hora
+
+y NO ser enviada desde React.
+
+39. AUDITORÍA
+
+Crear:
+
+auditoria
+
+Campos:
+
+id
+administrador_id
+accion
+entidad
+entidad_id
+descripcion
+fecha_hora
+ip
+
+Registrar:
+
+CREAR_TRABAJADOR
+EDITAR_TRABAJADOR
+ACTIVAR_TRABAJADOR
+DESACTIVAR_TRABAJADOR
+ASIGNAR_HORARIO
+MODIFICAR_HORARIO
+REGISTRAR_HUELLA
+REEMPLAZAR_HUELLA
+CORREGIR_MARCACION
+
+40. PANEL ADMINISTRATIVO
+
+Sidebar:
+
+Dashboard
+Trabajadores
+Horarios
+Marcaciones
+Reportes
+Configuración
+Cerrar sesión
+
+41. CRUD DE TRABAJADORES
+
+Permitir:
+
+Crear
+Consultar
+Editar
+Activar
+Desactivar
+
+NO borrar físicamente trabajadores que tengan historial.
+
+42. ADMINISTRACIÓN DE HORARIOS
+
+Crear:
+
+/admin/horarios
+
+El administrador podrá:
+
+Crear plantilla
+Editar plantilla
+Desactivar plantilla
+Asignar plantilla
+Asignar horario personalizado
+Cambiar horario de trabajador
+Consultar horario actual
+Consultar historial de horarios
+
+43. CONSULTA DIARIA
+
+Mostrar:
+
+Trabajador | Entrada | Salida almuerzo | Regreso almuerzo | Salida | Estado
+
+Internamente las marcaciones continúan siendo registros independientes.
+
+44. FILTROS
+
+Permitir combinar:
+
+Trabajador
+Fecha
+Rango de fechas
+Tipo de marcación
+Estado
+Horario
+
+Tipo:
+
+Todos
+Entrada
+Salida a almuerzo
+Regreso de almuerzo
+Salida
+
+Estado:
+
+Todos
+A tiempo
+Tardanza
+Anticipado
+Salida anticipada
+
+45. REPORTES
+
+El administrador debe poder:
+
+Ver en pantalla
+Descargar Excel
+Descargar PDF
+
+Los archivos descargados deberán RESPETAR LOS FILTROS seleccionados.
+
+46. EXCEL
+
+Utilizar:
+
+openpyxl
+
+Columnas:
+
+Fecha
+Código
+Nombre
+Apellido
+Tipo de marcación
+Hora programada
+Hora marcada
+Estado
+Diferencia
+
+Incluir:
+
+- Encabezados en negrita.
+- Filtros.
+- Ancho adecuado.
+- Formato correcto de hora.
+- Formato correcto de fecha.
+
+47. PDF
+
+Utilizar:
+
+ReportLab
+
+Mostrar:
+
+FARMACIA
+REPORTE DE CONTROL DE HORARIOS
+
+Desde:
+Hasta:
+Trabajador:
+Tipo:
+Estado:
+
+Resumen:
+
+Total marcaciones
+Total tardanzas
+Total marcaciones a tiempo
+Total salidas anticipadas
+
+48. API
+
+Organizar:
+
+/api/auth
+/api/admin/trabajadores
+/api/admin/horarios
+/api/admin/marcaciones
+/api/admin/reportes
+/api/marcaciones
+/api/biometria
+
+49. AUTENTICACIÓN
+
+Endpoints:
+
+POST /api/auth/login
+POST /api/auth/logout
+GET /api/auth/me
+
+Utilizar contraseña con hash seguro.
+
+50. MARCACIÓN BIOMÉTRICA
+
+Endpoint equivalente a:
+
+POST /api/marcaciones/biometrica
+
+React podrá mandar solamente:
+
+{
+    "tipo_marcacion": "ENTRADA"
+}
+
+NO mandar:
+
+trabajador_id
+
+La identidad debe provenir del lector de huella.
+
+Tampoco mandar:
+
+fecha
+hora
+estado
+minutos_tardanza
+
+Todo eso debe determinarlo Flask.
+
+51. RESPUESTA DE MARCACIÓN
+
+Ejemplo:
+
+{
+    "success": true,
+    "message": "Marcación registrada correctamente",
+    "data": {
+        "trabajador": "Juan Pérez",
+        "tipo": "ENTRADA",
+        "hora": "07:58 AM",
+        "estado": "A_TIEMPO",
+        "minutos_diferencia": 0
+    }
+}
+
+52. ERROR DE SECUENCIA
+
+Ejemplo:
+
+{
+    "success": false,
+    "code": "SECUENCIA_INVALIDA",
+    "message": "Debe registrar primero su salida a almuerzo."
+}
+
+53. ESTRUCTURA BACKEND
+
+backend/
+│
+├── app/
+│   ├── __init__.py
+│   ├── models/
+│   │   ├── administrador.py
+│   │   ├── trabajador.py
+│   │   ├── plantilla_horario.py
+│   │   ├── horario_trabajador.py
+│   │   ├── huella.py
+│   │   ├── marcacion.py
+│   │   └── auditoria.py
+│   ├── routes/
+│   │   ├── auth.py
+│   │   ├── trabajadores.py
+│   │   ├── horarios.py
+│   │   ├── marcaciones.py
+│   │   ├── reportes.py
+│   │   └── biometria.py
+│   ├── services/
+│   │   ├── attendance_service.py
+│   │   ├── schedule_service.py
+│   │   ├── report_service.py
+│   │   └── fingerprint/
+│   │       ├── base.py
+│   │       ├── mock_provider.py
+│   │       └── real_provider.py
+│   └── utils/
+│       └── datetime_utils.py
+├── migrations/
+├── tests/
+├── config.py
+├── requirements.txt
+├── run.py
+├── .env.example
+└── README.md
+
+54. ESTRUCTURA FRONTEND
+
+frontend/
+└── src/
+    ├── components/
+    │   ├── AdminLayout.jsx
+    │   ├── Sidebar.jsx
+    │   ├── Navbar.jsx
+    │   ├── ProtectedRoute.jsx
+    │   ├── Loading.jsx
+    │   └── Modal.jsx
+    ├── pages/
+    │   ├── Home.jsx
+    │   ├── Marcar.jsx
+    │   └── admin/
+    │       ├── Login.jsx
+    │       ├── Dashboard.jsx
+    │       ├── Trabajadores.jsx
+    │       ├── Horarios.jsx
+    │       ├── Marcaciones.jsx
+    │       ├── Reportes.jsx
+    │       └── Configuracion.jsx
+    ├── services/
+    │   ├── api.js
+    │   ├── authService.js
+    │   ├── trabajadorService.js
+    │   ├── horarioService.js
+    │   ├── marcacionService.js
+    │   └── reporteService.js
+    └── router/
+        └── router.jsx
+
+================================
+FASE 1 — CREACIÓN Y ESTRUCTURA BASE
+================================
+
+Crear desde cero:
+
+Backend:
+Python
+Flask
+Flask-SQLAlchemy
+Flask-Migrate
+Flask-CORS
+PyMySQL
+python-dotenv
+
+Frontend:
+React
+Vite
+React Router
+Axios
+
+Crear las carpetas definidas en la arquitectura.
+
+Crear:
+
+GET /api/health
+
+Respuesta:
+
+{
+    "status": "ok"
+}
+
+Crear pantalla principal:
+
+ADMINISTRADOR
+TRABAJADOR
+
+Configurar:
+
+America/Guatemala
+
+Crear función central:
+
+obtener_hora_actual()
+
+que posteriormente será utilizada por TODAS las marcaciones.
+
+Crear .env.example.
+
+VERIFICACIÓN FASE 1
+
+Comprobar:
+
+- Flask inicia.
+- React inicia.
+- React se comunica con Flask.
+- MySQL está configurado.
+- /api/health funciona.
+- No existen errores en consola.
+
+NO continuar con FASE 2.
+
+================================
+FASE 2 — DISEÑO Y CREACIÓN DE BASE DE DATOS
+================================
+
+Crear modelos:
+
+Administrador
+Trabajador
+PlantillaHorario
+HorarioTrabajador
+Huella
+Marcacion
+Auditoria
+
+Crear relaciones.
+Crear migraciones.
+Crear índices.
+
+Crear restricción de marcación única por:
+
+trabajador_id
+fecha
+tipo_marcacion
+
+Crear administrador inicial mediante comando seguro.
+
+Crear plantillas iniciales:
+
+HORARIO A
+Entrada: 08:00
+Salida almuerzo: 12:45
+Regreso almuerzo: 13:45
+Salida: 18:00
+
+HORARIO B
+Entrada: 08:00
+Salida almuerzo: 13:45
+Regreso almuerzo: 14:45
+Salida: 18:00
+
+VERIFICACIÓN FASE 2
+
+Comprobar:
+
+- Migraciones funcionan.
+- Tablas creadas.
+- Relaciones correctas.
+- Datos iniciales correctos.
+
+NO continuar con FASE 3.
+
+================================
+FASE 3 — LOGIN DEL ADMINISTRADOR
+================================
+
+Crear:
+
+/admin/login
+
+Backend:
+
+POST /api/auth/login
+POST /api/auth/logout
+GET /api/auth/me
+
+Implementar:
+
+- Hash de contraseña.
+- Sesión segura.
+- ProtectedRoute.
+- Protección de APIs administrativas.
+
+VERIFICACIÓN FASE 3
+
+Probar:
+
+Usuario correcto
+Contraseña correcta
+
+Probar credenciales incorrectas.
+Probar acceso a /admin sin sesión.
+
+NO continuar con FASE 4.
+
+================================
+FASE 4 — CRUD DE TRABAJADORES
+================================
+
+Crear:
+
+/admin/trabajadores
+
+Permitir:
+
+Crear
+Editar
+Consultar
+Activar
+Desactivar
+
+Campos:
+
+Código
+Nombre
+Apellido
+Estado
+Horario
+Estado huella
+
+NO eliminar físicamente trabajadores.
+
+VERIFICACIÓN FASE 4
+
+Crear varios trabajadores.
+Editar.
+Desactivar.
+Activar.
+Confirmar persistencia MySQL.
+
+NO continuar con FASE 5.
+
+================================
+FASE 5 — ADMINISTRACIÓN Y ASIGNACIÓN DE HORARIOS
+================================
+
+ESTA FASE ES FUNDAMENTAL.
+
+Crear:
+
+/admin/horarios
+
+Permitir:
+
+Plantillas:
+- Crear horario.
+- Editar horario.
+- Desactivar horario.
+
+Asignación:
+Permitir al administrador asignar a cada trabajador:
+
+Hora entrada
+Hora salida almuerzo
+Hora regreso almuerzo
+Hora salida
+Tolerancia entrada
+Tolerancia regreso almuerzo
+
+Permitir:
+
+Usar plantilla
+
+o:
+
+Horario personalizado
+
+Crear historial mediante:
+
+fecha_inicio
+fecha_fin
+
+Cuando se cambia un horario:
+
+NO editar destructivamente el horario histórico.
+
+Cerrar la vigencia anterior y crear una nueva asignación.
+
+VERIFICACIÓN FASE 5
+
+Trabajador A:
+08:00
+12:45
+13:45
+18:00
+
+Trabajador B:
+09:00
+13:45
+14:45
+18:00
+
+Comprobar que ambos tienen horarios independientes.
+
+NO continuar con FASE 6.
+
+================================
+FASE 6 — REGISTRO DE HUELLA SIMULADA
+================================
+
+Implementar:
+
+MockFingerprintProvider
+
+Permitir registrar una identificación biométrica simulada a cada trabajador.
+
+Ejemplo:
+
+FP0001 → Juan Pérez
+FP0002 → María López
+
+La simulación debe existir únicamente en desarrollo.
+
+Configurar:
+
+FINGERPRINT_PROVIDER=mock
+
+VERIFICACIÓN FASE 6
+
+Registrar huellas simuladas.
+Identificar trabajadores correctamente.
+Probar huella inexistente.
+
+NO continuar con FASE 7.
+
+================================
+FASE 7 — VISTA DE MARCACIÓN DEL TRABAJADOR
+================================
+
+Crear:
+
+/marcar
+
+Mostrar:
+
+ENTRADA
+SALIDA A ALMUERZO
+REGRESO DE ALMUERZO
+SALIDA
+
+El trabajador NO inicia sesión.
+
+Al seleccionar una opción:
+
+Coloque su dedo en el lector
+
+La identificación debe provenir de:
+
+FingerprintProvider
+
+VERIFICACIÓN FASE 7
+
+Probar los cuatro botones.
+Comprobar identificación.
+
+Todavía no asumir que la marcación es válida sin el motor de reglas.
+
+NO continuar con FASE 8.
+
+================================
+FASE 8 — MOTOR DE SECUENCIA DE MARCACIONES
+================================
+
+Crear la lógica obligatoria:
+
+ENTRADA
+↓
+SALIDA_ALMUERZO
+↓
+REGRESO_ALMUERZO
+↓
+SALIDA
+
+Implementar:
+
+validar_secuencia()
+
+Reglas:
+
+ENTRADA:
+Permitida únicamente si no existe entrada.
+
+SALIDA_ALMUERZO:
+Requiere:
+ENTRADA
+
+REGRESO_ALMUERZO:
+Requiere:
+ENTRADA
+SALIDA_ALMUERZO
+
+SALIDA:
+Requiere como mínimo:
+ENTRADA
+
+y para trabajadores con almuerzo:
+SALIDA_ALMUERZO
+REGRESO_ALMUERZO
+
+Evitar duplicados.
+
+VERIFICACIÓN FASE 8
+
+Probar:
+
+SALIDA sin ENTRADA → ERROR
+
+SALIDA_ALMUERZO sin ENTRADA → ERROR
+
+REGRESO_ALMUERZO sin SALIDA_ALMUERZO → ERROR
+
+ENTRADA → SALIDA_ALMUERZO → REGRESO_ALMUERZO → SALIDA → CORRECTO
+
+NO continuar con FASE 9.
+
+================================
+FASE 9 — HORA DEL SISTEMA Y MOTOR DE PUNTUALIDAD
+================================
+
+Toda marcación debe usar exclusivamente:
+
+Hora backend
++
+America/Guatemala
+
+Implementar:
+
+obtener_hora_actual()
+obtener_horario_trabajador()
+obtener_hora_programada()
+calcular_estado()
+calcular_diferencia_minutos()
+
+Estados:
+
+A_TIEMPO
+TARDANZA
+ANTICIPADO
+SALIDA_ANTICIPADA
+
+Guardar:
+
+hora_programada
+fecha_hora real
+estado
+minutos_diferencia
+
+VERIFICACIÓN FASE 9
+
+Ejecutar pruebas:
+
+Entrada 07:55 para horario 08:00
+→ A_TIEMPO
+
+Entrada 08:20
+→ TARDANZA
+20 minutos
+
+Regreso 13:53
+Horario 13:45
+→ TARDANZA
+8 minutos
+
+Salida 17:35
+Horario 18:00
+→ SALIDA_ANTICIPADA
+25 minutos
+
+Comprobar que React no puede alterar la hora.
+
+NO continuar con FASE 10.
+
+================================
+FASE 10 — REGISTRO COMPLETO DE MARCACIONES
+================================
+
+Integrar:
+
+Huella
++
+Identificación
++
+Horario asignado
++
+Secuencia
++
+Hora servidor
++
+Puntualidad
++
+MySQL
+
+Flujo final:
+
+Seleccionar tipo
+↓
+Huella
+↓
+Identificar
+↓
+Obtener hora backend
+↓
+Obtener horario
+↓
+Validar secuencia
+↓
+Validar duplicado
+↓
+Calcular puntualidad
+↓
+Guardar
+↓
+Responder
+
+VERIFICACIÓN FASE 10
+
+Ejecutar una jornada completa de prueba.
+
+NO continuar con FASE 11.
+
+================================
+FASE 11 — PANEL ADMINISTRATIVO DE MARCACIONES
+================================
+
+Crear:
+
+/admin/marcaciones
+
+Mostrar jornada en formato:
+
+Trabajador | Entrada | Salida almuerzo | Regreso almuerzo | Salida
+
+Mostrar estados.
+Crear vista detallada de marcaciones.
+
+Filtros:
+
+Trabajador
+Tipo
+Fecha
+Desde
+Hasta
+Estado
+Horario
+
+VERIFICACIÓN FASE 11
+
+Probar todos los filtros individualmente y combinados.
+
+NO continuar con FASE 12.
+
+================================
+FASE 12 — DASHBOARD ADMINISTRATIVO
+================================
+
+Mostrar:
+
+Trabajadores activos
+Presentes hoy
+Entradas registradas
+Tardanzas
+En almuerzo
+Regresos tardíos
+Salidas
+Pendientes de salida
+
+Mantener diseño simple.
+
+NO continuar con FASE 13.
+
+================================
+FASE 13 — REPORTES EN PANTALLA
+================================
+
+Crear:
+
+/admin/reportes
+
+Permitir generar reportes por:
+
+Trabajador
+Tipo marcación
+Estado
+Fecha
+Rango de fechas
+
+Mostrar resultados dentro del sistema.
+
+NO continuar con FASE 14.
+
+================================
+FASE 14 — REPORTES EXCEL
+================================
+
+Utilizar:
+
+openpyxl
+
+Exportar exactamente los filtros seleccionados.
+
+Columnas:
+
+Fecha
+Código
+Trabajador
+Entrada/Tipo
+Hora programada
+Hora registrada
+Estado
+Diferencia
+
+Agregar formato profesional sencillo.
+
+NO continuar con FASE 15.
+
+================================
+FASE 15 — REPORTES PDF
+================================
+
+Utilizar:
+
+ReportLab
+
+Generar:
+
+REPORTE DE CONTROL DE HORARIOS
+
+Mostrar:
+
+- Fecha de generación.
+- Rango.
+- Filtros.
+- Tabla.
+- Totales.
+- Tardanzas.
+- Salidas anticipadas.
+
+NO continuar con FASE 16.
+
+================================
+FASE 16 — AUDITORÍA ADMINISTRATIVA
+================================
+
+Registrar:
+
+Creación trabajador
+Edición trabajador
+Activación
+Desactivación
+Cambio horario
+Registro huella
+Cambio huella
+
+Toda modificación de horario debe quedar registrada.
+
+NO continuar con FASE 17.
+
+================================
+FASE 17 — INTEGRACIÓN DEL LECTOR DE HUELLA REAL
+================================
+
+SOLO realizar cuando se proporcione:
+
+Marca
+Modelo exacto
+Sistema operativo
+SDK
+Driver
+Documentación
+
+Entonces:
+
+1. Revisar documentación oficial.
+2. Instalar driver.
+3. Instalar SDK.
+4. Implementar RealFingerprintProvider.
+5. Registrar huellas.
+6. Identificar huellas.
+7. Gestionar lector desconectado.
+8. Gestionar lectura incorrecta.
+9. Gestionar huella no reconocida.
+
+NO cambiar:
+
+attendance_service.py
+
+para adaptar cada lector.
+
+La capa biométrica debe permanecer desacoplada.
+
+NO continuar con FASE 18.
+
+================================
+FASE 18 — SEGURIDAD
+================================
+
+Revisar:
+
+Contraseñas
+Hash
+Sesiones
+Cookies
+CORS
+CSRF
+Variables .env
+SQL Injection
+XSS
+Validación backend
+Información biométrica
+Permisos
+
+Nunca exponer templates biométricos.
+
+NO continuar con FASE 19.
+
+================================
+FASE 19 — PRUEBAS INTEGRALES
+================================
+
+Crear pruebas unitarias y funcionales.
+
+CASO 1
+
+ENTRADA
+08:00
+→ válido
+
+CASO 2
+
+SALIDA sin ENTRADA
+→ rechazado
+
+CASO 3
+
+ENTRADA
+↓
+REGRESO ALMUERZO
+→ rechazado
+
+CASO 4
+
+ENTRADA
+↓
+SALIDA ALMUERZO
+↓
+REGRESO ALMUERZO
+↓
+SALIDA
+→ válido
+
+CASO 5
+
+Entrada duplicada:
+→ rechazada
+
+CASO 6
+
+Huella de trabajador desactivado:
+→ rechazada
+
+CASO 7
+
+Trabajador A con horario 08:00:
+
+08:10 → tardanza 10
+
+CASO 8
+
+Trabajador B con horario 09:00:
+
+08:10 → a tiempo
+
+Esto comprobará que los horarios son individuales.
+
+NO continuar con FASE 20.
+
+================================
+FASE 20 — REVISIÓN FINAL Y DOCUMENTACIÓN
+================================
+
+Revisar:
+
+Backend
+Frontend
+Base de datos
+Migraciones
+Horarios
+Secuencias
+Huella
+Reportes
+Seguridad
+Auditoría
+
+Actualizar README.
+
+Documentar:
+
+Instalación backend
+Instalación frontend
+Configuración MySQL
+Variables .env
+Creación administrador
+Migraciones
+Ejecución
+Configuración lector
+Backups
+
+
+================================
+FASE 21 — DISEÑO RESPONSIVE Y ADAPTACIÓN A DISPOSITIVOS
+================================
+
+El sistema completo debe ser RESPONSIVE.
+
+Esta fase debe revisar y adaptar TODAS las vistas existentes para que funcionen correctamente en:
+
+- Computadoras de escritorio.
+- Laptops.
+- Tablets.
+- Teléfonos móviles.
+- Pantallas táctiles utilizadas como kiosco para marcación.
+
+La aplicación no debe depender de una única resolución de pantalla.
+
+OBJETIVO DE LA FASE 21
+
+Garantizar que todo el frontend desarrollado en React se adapte correctamente al tamaño del dispositivo sin perder:
+
+- Legibilidad.
+- Funcionalidad.
+- Accesibilidad.
+- Facilidad de uso.
+- Controles.
+- Tablas.
+- Formularios.
+- Filtros.
+- Botones.
+- Modales.
+- Navegación.
+
+VISTAS A REVISAR
+
+Revisar como mínimo:
+
+/
+ /admin/login
+ /admin
+ /admin/trabajadores
+ /admin/horarios
+ /admin/marcaciones
+ /admin/reportes
+ /admin/configuracion
+ /marcar
+
+VISTA PRINCIPAL
+
+En escritorio:
+
+Mostrar las opciones Administrador y Trabajador de forma clara y centrada.
+
+En móvil:
+
+Los botones deben adaptarse al ancho disponible.
+
+No permitir:
+
+- Texto cortado.
+- Botones fuera de pantalla.
+- Scroll horizontal innecesario.
+- Elementos superpuestos.
+
+VISTA DEL TRABAJADOR
+
+La vista:
+
+/marcar
+
+debe tener prioridad especial en esta fase.
+
+Debe estar preparada para funcionar correctamente en:
+
+- Monitor de computadora.
+- Tablet.
+- Pantalla táctil.
+- Teléfono.
+
+Los botones:
+
+ENTRADA
+SALIDA A ALMUERZO
+REGRESO DE ALMUERZO
+SALIDA
+
+deben ser:
+
+- Grandes.
+- Fácilmente presionables.
+- Separados entre sí.
+- Claramente identificables.
+- Adaptables al ancho de pantalla.
+
+En pantallas pequeñas los botones deberán colocarse preferiblemente en una sola columna.
+
+Ejemplo móvil:
+
+CONTROL DE HORARIOS
+
+15/08/2026
+11:45 AM
+
+[ ENTRADA ]
+
+[ SALIDA A ALMUERZO ]
+
+[ REGRESO DE ALMUERZO ]
+
+[ SALIDA ]
+
+No utilizar botones demasiado pequeños para dispositivos táctiles.
+
+PANEL ADMINISTRATIVO RESPONSIVE
+
+En escritorio se puede utilizar un sidebar lateral.
+
+Ejemplo:
+
+Dashboard
+Trabajadores
+Horarios
+Marcaciones
+Reportes
+Configuración
+Cerrar sesión
+
+En tablet y móvil el sidebar debe transformarse en un menú adaptable.
+
+Puede utilizarse:
+
+- Menú hamburguesa.
+- Drawer lateral.
+- Menú colapsable.
+
+No permitir que el sidebar ocupe toda la pantalla de manera permanente en teléfonos.
+
+TABLAS RESPONSIVE
+
+Las tablas administrativas pueden contener mucha información.
+
+Debes evitar romper el diseño.
+
+Para pantallas grandes:
+
+Mostrar tablas completas.
+
+Para pantallas medianas o pequeñas:
+
+Utilizar alguna estrategia adecuada como:
+
+- Contenedor con scroll horizontal controlado.
+- Ocultar columnas secundarias.
+- Mostrar información prioritaria.
+- Vista tipo tarjetas cuando sea conveniente.
+
+Nunca permitir que la tabla rompa el ancho general de la página.
+
+TABLA DE MARCACIONES
+
+En escritorio puede mostrarse:
+
+Trabajador | Entrada | Salida almuerzo | Regreso almuerzo | Salida | Estado
+
+En móvil puede transformarse conceptualmente en:
+
+Juan Pérez
+
+Entrada:
+07:58
+
+Salida almuerzo:
+12:45
+
+Regreso:
+13:46
+
+Salida:
+18:03
+
+Estado:
+A TIEMPO
+
+Esto puede implementarse mediante tarjetas si mejora la experiencia móvil.
+
+FORMULARIOS RESPONSIVE
+
+Los formularios de:
+
+- Crear trabajador.
+- Editar trabajador.
+- Asignar horario.
+- Crear plantilla.
+- Configuración.
+
+deben adaptarse correctamente.
+
+En escritorio se pueden utilizar dos columnas.
+
+En móvil:
+
+Utilizar una sola columna.
+
+Ejemplo:
+
+Nombre
+[____________]
+
+Apellido
+[____________]
+
+Hora entrada
+[08:00]
+
+Hora salida
+[18:00]
+
+Los inputs nunca deben desbordar su contenedor.
+
+FILTROS RESPONSIVE
+
+Los filtros de:
+
+- Trabajador.
+- Fecha.
+- Rango.
+- Tipo.
+- Estado.
+- Horario.
+
+deben adaptarse.
+
+En escritorio:
+
+Pueden mostrarse en varias columnas.
+
+En móvil:
+
+Deben apilarse verticalmente.
+
+Los botones:
+
+Aplicar filtros
+Limpiar filtros
+Descargar Excel
+Descargar PDF
+
+deben adaptarse al ancho disponible.
+
+MODALES
+
+Todos los modales deben:
+
+- Caber dentro de la pantalla.
+- Tener scroll interno cuando el contenido sea largo.
+- No exceder el alto visible.
+- Ser utilizables desde móvil.
+
+No utilizar tamaños fijos que rompan en pantallas pequeñas.
+
+TIPOGRAFÍA
+
+Utilizar tamaños legibles.
+
+No utilizar textos demasiado pequeños en móvil.
+
+Mantener una jerarquía clara para:
+
+- Títulos.
+- Subtítulos.
+- Labels.
+- Tablas.
+- Mensajes.
+- Estados.
+
+ESPACIADO
+
+Ajustar:
+
+- Padding.
+- Margin.
+- Gap.
+
+según el tamaño de pantalla.
+
+Evitar exceso de espacios en móvil y elementos demasiado juntos.
+
+BOTONES
+
+Los botones principales deben ser fáciles de utilizar en pantallas táctiles.
+
+Especialmente:
+
+- Registrar entrada.
+- Salida a almuerzo.
+- Regreso de almuerzo.
+- Salida.
+- Guardar.
+- Editar.
+- Aplicar filtros.
+- Descargar.
+
+No hacer botones que dependan únicamente de iconos sin texto cuando pueda causar confusión.
+
+MEDIA QUERIES
+
+Si se utiliza CSS tradicional, crear breakpoints consistentes.
+
+Ejemplo conceptual:
+
+Móvil:
+hasta aproximadamente 640px
+
+Tablet:
+641px a 1024px
+
+Escritorio:
+más de 1024px
+
+No es obligatorio usar exactamente esos valores si la estructura del proyecto requiere otros.
+
+CENTRALIZACIÓN DE ESTILOS
+
+Evitar repetir los mismos estilos responsive en múltiples archivos.
+
+Crear estilos reutilizables.
+
+Cuando sea conveniente utilizar:
+
+- Variables CSS.
+- Clases comunes.
+- Componentes reutilizables.
+- Layouts compartidos.
+
+NO duplicar CSS innecesariamente.
+
+NO MODIFICAR LA LÓGICA DEL SISTEMA
+
+Esta fase debe centrarse principalmente en:
+
+- Diseño responsive.
+- Usabilidad.
+- Adaptación visual.
+
+NO modificar innecesariamente:
+
+- Reglas de marcación.
+- Lógica de horarios.
+- Identificación biométrica.
+- Validaciones backend.
+- Cálculo de tardanzas.
+- Reportes.
+
+Si se modifica algún componente React, mantener intacta su funcionalidad.
+
+PRUEBAS RESPONSIVE
+
+Probar como mínimo las siguientes resoluciones aproximadas:
+
+Móvil pequeño:
+320 x 568
+
+Móvil estándar:
+375 x 667
+
+Móvil grande:
+430 x 932
+
+Tablet:
+768 x 1024
+
+Laptop:
+1366 x 768
+
+Escritorio:
+1920 x 1080
+
+No limitar las pruebas únicamente a esas resoluciones.
+
+También redimensionar manualmente el navegador para detectar puntos donde el diseño se rompa.
+
+VERIFICAR EN CADA RESOLUCIÓN
+
+Comprobar:
+
+- No existe scroll horizontal general innecesario.
+- Los textos son legibles.
+- Los botones funcionan.
+- Los formularios caben.
+- Los modales funcionan.
+- Las tablas son utilizables.
+- El menú administrativo funciona.
+- La vista de marcación es fácil de usar.
+- Los filtros son accesibles.
+- Excel y PDF siguen descargando correctamente.
+- No desaparecen controles importantes.
+
+PRIORIDAD MÓVIL PARA /marcar
+
+La vista del trabajador debe tener especial prioridad en dispositivos pequeños.
+
+Debe permitir realizar una marcación con la menor cantidad posible de interacción.
+
+La información más importante será:
+
+- Tipo de marcación.
+- Mensaje para colocar la huella.
+- Resultado.
+- Nombre del trabajador identificado.
+- Hora registrada.
+- Estado.
+
+No saturar esta pantalla con información administrativa.
+
+ACCESIBILIDAD BÁSICA
+
+Mantener:
+
+- Buen contraste.
+- Labels visibles.
+- Botones identificables.
+- Áreas de clic suficientemente grandes.
+- Estados no dependientes únicamente del color.
+
+Ejemplo:
+
+No mostrar únicamente un fondo rojo.
+
+Mostrar también:
+
+TARDANZA
+
+No mostrar únicamente verde.
+
+Mostrar también:
+
+A TIEMPO
+
+VERIFICACIÓN FASE 21
+
+Revisar TODAS las páginas.
+
+Comprobar en móvil, tablet y escritorio.
+
+Corregir:
+
+- Overflow.
+- Elementos superpuestos.
+- Textos cortados.
+- Botones inaccesibles.
+- Tablas rotas.
+- Formularios demasiado anchos.
+- Modales fuera de pantalla.
+- Sidebar defectuoso.
+
+Ejecutar el frontend después de los cambios.
+
+Revisar consola del navegador.
+
+No debe haber errores nuevos relacionados con los cambios responsive.
+
+Al finalizar responder:
+
+FASE 21 COMPLETADA
+
+Después indicar:
+
+Archivos creados:
+Archivos modificados:
+Componentes adaptados:
+Vistas verificadas:
+Resoluciones probadas:
+Problemas encontrados:
+Correcciones realizadas:
+
+NO modificar fases anteriores salvo cuando sea necesario para corregir el comportamiento responsive.
+
+
+REGLAS OBLIGATORIAS PARA CODEX
+
+Durante todas las fases:
+
+1. Analiza primero el código que ya existe.
+2. No elimines funcionalidad correcta.
+3. Integra cada fase con las anteriores.
+4. No rehagas todo el proyecto si no es necesario.
+5. No inventes SDK del lector de huellas.
+6. No almacenes contraseñas en texto plano.
+7. No almacenes imágenes de huellas innecesariamente.
+8. No aceptes la hora enviada desde React.
+9. No aceptes el ID del trabajador desde la pantalla pública de marcación.
+10. No calcules tardanzas en React.
+11. Toda lógica de negocio debe estar en Flask.
+12. MySQL debe ser la fuente de información persistente.
+13. Mantén el código modular.
+14. Comenta las funciones importantes.
+15. Ejecuta pruebas después de cada fase.
+16. Corrige errores antes de declarar terminada una fase.
+17. NO AVANCES AUTOMÁTICAMENTE A LA SIGUIENTE FASE.
+
+COMENTARIOS EN EL CÓDIGO
+
+Las funciones importantes deben explicar:
+
+Qué hace
+Qué recibe
+Qué devuelve
+Desde dónde se utiliza
+
+Ejemplo:
+
+def validar_secuencia(trabajador_id, tipo_marcacion, fecha):
+    '''
+    Valida si el trabajador puede realizar la marcación solicitada.
+
+    Reglas:
+        ENTRADA -> SALIDA_ALMUERZO ->
+        REGRESO_ALMUERZO -> SALIDA.
+
+    Recibe:
+        trabajador_id
+        tipo_marcacion
+        fecha
+
+    Utilizado desde:
+        services/attendance_service.py
+
+    Retorna:
+        Resultado de la validación.
+    '''
+
+RESULTADO AL FINALIZAR CADA FASE
+
+Al terminar cada fase escribir claramente:
+
+FASE X COMPLETADA
+
+Ejemplo:
+
+FASE 5 COMPLETADA
+
+Después indicar:
+
+Archivos creados:
+Archivos modificados:
+Base de datos modificada:
+Endpoints creados:
+Frontend creado:
+Pruebas realizadas:
+Resultados:
+Problemas encontrados:
+Pendiente para la siguiente fase:
+
+NO comenzar la siguiente fase.
+
+FLUJO FINAL ESPERADO DEL TRABAJADOR
+
+TRABAJADOR
+    ↓
+Selecciona ENTRADA
+    ↓
+Coloca huella
+    ↓
+Sistema identifica trabajador
+    ↓
+Backend toma hora del sistema
+    ↓
+Consulta horario individual
+    ↓
+Valida que no exista entrada
+    ↓
+Registra
+
+Posteriormente:
+
+SALIDA ALMUERZO
+    ↓
+Huella
+    ↓
+¿Existe ENTRADA?
+    ↓
+Sí
+    ↓
+Registrar
+
+Después:
+
+REGRESO ALMUERZO
+    ↓
+Huella
+    ↓
+¿Existe SALIDA_ALMUERZO?
+    ↓
+Sí
+    ↓
+Registrar
+
+Finalmente:
+
+SALIDA
+    ↓
+Huella
+    ↓
+¿Existe ENTRADA?
+    ↓
+¿Almuerzo completo?
+    ↓
+Sí
+    ↓
+Registrar
+
+CRITERIOS DE ACEPTACIÓN
+
+El proyecto final estará completo cuando:
+
+✓ Administrador inicia sesión
+✓ Administrador crea trabajadores
+✓ Administrador activa/desactiva trabajadores
+✓ Administrador registra huellas
+✓ Administrador crea horarios
+✓ Administrador asigna horarios diferentes por trabajador
+✓ Administrador modifica horarios
+✓ Sistema conserva historial de horarios
+✓ Trabajador no necesita login
+✓ Trabajador se identifica mediante huella
+✓ Hora de marcación proviene únicamente del backend
+✓ Entrada debe existir antes del almuerzo
+✓ Salida de almuerzo debe existir antes del regreso de almuerzo
+✓ Entrada debe existir antes de la salida
+✓ No existen marcaciones duplicadas
+✓ Se calcula puntualidad automáticamente
+✓ Se calculan tardanzas
+✓ Se calculan salidas anticipadas
+✓ Administrador consulta horarios registrados
+✓ Administrador filtra información
+✓ Administrador visualiza reportes
+✓ Administrador descarga Excel
+✓ Administrador descarga PDF
+✓ Existe auditoría
+✓ Existe seguridad
+✓ Existe integración biométrica desacoplada
+✓ Todo el sistema es responsive en escritorio, laptop, tablet y móvil
+✓ La vista de trabajador está optimizada para pantallas táctiles
+
+INSTRUCCIÓN PARA INICIAR
+
+Antes de programar:
+
+1. Analiza todos estos requisitos.
+2. Revisa la estructura actual del repositorio si ya existe.
+3. Explica qué se realizará en la fase solicitada.
+4. Respeta la arquitectura indicada.
+5. No avances a fases posteriores.
+6. Ejecuta y prueba lo desarrollado.
+
+INICIA AHORA ÚNICAMENTE CON:
+
+FASE 1 — CREACIÓN Y ESTRUCTURA BASE
+
+Cuando termines responde:
+
+FASE 1 COMPLETADA
+
+y detente.
