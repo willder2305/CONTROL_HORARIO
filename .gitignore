@@ -27,3 +27,6 @@ Thumbs.db
 
 # Diagnostic bridge variants
 backend/zk9500_bridge/bin_x64/
+venv/
+*.log
+backups/

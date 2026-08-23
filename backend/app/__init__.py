@@ -1,4 +1,6 @@
-from flask import Flask
+from pathlib import Path
+
+from flask import Flask, abort, send_from_directory
 from flask_cors import CORS
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
@@ -42,5 +44,25 @@ def create_app(config_class=Config):
     app.register_blueprint(marcaciones_bp, url_prefix="/api/marcaciones")
     app.register_blueprint(trabajadores_bp, url_prefix="/api/admin/trabajadores")
     register_commands(app)
+    register_frontend_routes(app)
 
     return app
+
+
+def register_frontend_routes(app):
+    frontend_dist = Path(__file__).resolve().parents[2] / "frontend" / "dist"
+    if not frontend_dist.exists():
+        return
+
+    @app.get("/")
+    def serve_frontend_index():
+        return send_from_directory(frontend_dist, "index.html")
+
+    @app.get("/<path:requested_path>")
+    def serve_frontend_asset_or_route(requested_path):
+        if requested_path.startswith("api/"):
+            abort(404)
+        target = frontend_dist / requested_path
+        if target.is_file():
+            return send_from_directory(frontend_dist, requested_path)
+        return send_from_directory(frontend_dist, "index.html")

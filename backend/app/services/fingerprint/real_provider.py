@@ -284,7 +284,7 @@ class RealFingerprintProvider(FingerprintProvider):
         except ImportError as error:
             raise FingerprintDeviceError(
                 "No se encontro el wrapper ZKFP2. Instale el ZKFinger SDK for Windows, "
-                "su driver oficial y un wrapper Python compatible antes de usar FINGERPRINT_PROVIDER=real."
+                "su driver oficial y un wrapper Python compatible antes de usar FINGERPRINT_PROVIDER=zk9500."
             ) from error
         return ZKFP2
 
@@ -459,3 +459,4 @@ class RealFingerprintProvider(FingerprintProvider):
     def _log(self, message):
         self.logger.info("[BIOMETRIC] %s", message)
         print(f"[BIOMETRIC] {message}", flush=True)
+

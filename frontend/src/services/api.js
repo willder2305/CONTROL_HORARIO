@@ -5,6 +5,10 @@ function resolveApiBaseUrl() {
     return import.meta.env.VITE_API_URL;
   }
 
+  if (import.meta.env.PROD) {
+    return '/api';
+  }
+
   const hostname = window.location.hostname || 'localhost';
   return `http://${hostname}:5000/api`;
 }

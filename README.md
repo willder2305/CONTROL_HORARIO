@@ -1,453 +1,669 @@
-# Sistema de control de horarios para farmacia
+# Sistema de Control de Horarios
 
-Sistema web para control de horarios de trabajadores mediante huella digital.
+Sistema web para administrar trabajadores, horarios, huellas digitales, marcaciones, reportes, auditoria y control biometrico con lector ZKTeco ZK9500.
 
-Stack:
+El sistema esta preparado para uso local en farmacia y para despliegue en una computadora Windows con MySQL y lector biometrico conectado por USB.
 
-- Backend: Python Flask, SQLAlchemy, Flask-Migrate, MySQL/PyMySQL.
-- Frontend: React, Vite, React Router, Axios.
-- Reportes: Excel con `openpyxl`, PDF con `ReportLab`.
-- Biometria: proveedor `mock` para desarrollo y proveedor real preparado para ZKTeco ZK9500.
+## Caracteristicas
 
-## Estado funcional
+- Panel administrativo con inicio de sesion.
+- Gestion de trabajadores activos/inactivos.
+- Registro obligatorio de huella al crear trabajadores en modo biometrico real.
+- Integracion con lector ZKTeco ZK9500.
+- Captura de 3 muestras para registro de huella.
+- Validacion de duplicados biometricos.
+- Asignacion de horarios con o sin almuerzo.
+- Marcacion automatica del trabajador: el trabajador solo presiona `MARCAR`.
+- El backend determina la siguiente marcacion segun horario y jornada.
+- Control de entrada, salida de almuerzo, entrada de almuerzo y salida.
+- Reportes administrativos con filtros.
+- Exportacion a Excel y PDF.
+- Dashboard de marcaciones.
+- Auditoria de acciones administrativas.
+- Proteccion CSRF en rutas administrativas.
+- Sesiones con cookies HttpOnly.
+- Preparado para produccion con Waitress.
+- Frontend React compilado servido por Flask en produccion.
 
-Implementado hasta FASE 20:
-
-- Login administrativo con sesion Flask.
-- CRUD de trabajadores.
-- Activar y desactivar trabajadores.
-- Registro y reemplazo de huella.
-- Plantillas de horario.
-- Asignacion individual de horarios con historial.
-- Marcacion publica por huella.
-- Validacion de secuencia:
-  - `ENTRADA`
-  - `SALIDA_ALMUERZO`
-  - `REGRESO_ALMUERZO`
-  - `SALIDA`
-- Hora oficial tomada solo desde backend en zona `America/Guatemala`.
-- Calculo de puntualidad, tardanzas y salidas anticipadas.
-- Panel de marcaciones.
-- Dashboard administrativo.
-- Reportes en pantalla.
-- Descarga Excel.
-- Descarga PDF.
-- Auditoria administrativa.
-- Capa real para lector ZKTeco ZK9500.
-- Seguridad basica: cookies `HttpOnly`, `SameSite=Lax`, CSRF y cabeceras defensivas.
-- Pruebas integrales.
-
-## Estructura
+## Arquitectura
 
 ```text
-backend/
-  app/
-    models/
-    routes/
-    services/
-    utils/
-  migrations/
-  tests/
-  config.py
-  requirements.txt
-  run.py
+React + Vite
+     ↓
+Flask
+     ↓
+MySQL
 
-frontend/
-  src/
-    components/
-    pages/
-    router/
-    services/
-    styles.css
+ZKTeco ZK9500
+     ↓
+Driver oficial ZKTeco / FPSensor
+     ↓
+ZKFinger Standard SDK 5.3.0.33
+     ↓
+Bridge C# compilado
+     ↓
+Backend Flask
+     ↓
+Sistema de marcacion
+```
+
+En desarrollo se puede ejecutar frontend y backend por separado.
+
+En produccion se recomienda:
+
+```text
+Usuario
+  ↓
+Waitress + Flask http://127.0.0.1:5000
+  ├── React compilado desde frontend/dist
+  └── API bajo /api
 ```
 
 ## Requisitos
 
-- Windows 10 64 bits recomendado.
-- XAMPP con MySQL en puerto `3306`.
-- Python 3.12 o compatible.
-- Node.js y npm.
-- Para lector real: ZKTeco ZK9500, ZKFinger SDK for Windows y driver oficial instalado.
+### Desarrollo
 
-## Base de datos MySQL
+- Git.
+- Python 3.12 probado en el equipo actual.
+- Node.js y npm para compilar frontend.
+- MySQL Server o XAMPP/MariaDB-MySQL.
+- ZKTeco ZK9500, driver oficial y SDK si se prueba biometria real.
 
-Crear la base en MySQL/XAMPP:
+### Produccion
+
+- Windows 10 o Windows 11 recomendado.
+- Python instalado en la PC final.
+- MySQL Server o XAMPP/MariaDB-MySQL.
+- Base de datos `horarios_control`.
+- ZKTeco ZK9500 conectado por USB.
+- Driver oficial ZKTeco / FPSensor.
+- ZKFinger Standard SDK 5.3.0.33.
+- .NET Framework compatible con el bridge C# compilado.
+- No se requiere Visual Studio en la PC final.
+- Node.js no es necesario en ejecucion si `frontend/dist` ya fue generado.
+
+## Compatibilidad Windows
+
+| Sistema | Aplicacion | ZK9500 | Estado |
+| --- | --- | --- | --- |
+| Windows 11 | Si, recomendado | Si, validar SDK/driver | Principal |
+| Windows 10 | Si, probado como objetivo | Si | Principal |
+| Windows 7 | Depende de versiones compatibles de Python, Node y dependencias | Si, si SDK/driver lo soportan | Compatible/legacy |
+| Windows XP | No se promete el sistema web moderno completo | Solo posible como compatibilidad legacy del SDK/driver | Legacy limitado |
+
+Notas importantes:
+
+- El entorno local probado usa Python 3.12.13, adecuado para Windows 10/11.
+- Windows 7 no debe asumirse compatible con Python moderno. Si se necesita Windows 7, validar una version de Python compatible y las dependencias reales antes del despliegue.
+- Para equipos antiguos, compilar el frontend en una maquina moderna y copiar `frontend/dist` evita instalar Node.js en la PC final.
+- Windows XP no debe usarse como plataforma principal del sistema web.
+
+## Clonar Repositorio
+
+```bash
+git clone https://github.com/willder2305/CONTROL_HORARIO.git
+cd CONTROL_HORARIO
+git checkout deploy-ready
+```
+
+## Base de Datos
+
+El sistema usa MySQL mediante SQLAlchemy y PyMySQL.
+
+Opciones compatibles:
+
+- XAMPP / MariaDB-MySQL.
+- MySQL Server.
+
+Base recomendada:
 
 ```sql
-CREATE DATABASE horarios_control CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE horarios_control
+CHARACTER SET utf8mb4
+COLLATE utf8mb4_unicode_ci;
 ```
 
-Conexion esperada para XAMPP:
+La conexion se configura en `backend/.env`:
 
 ```env
-DATABASE_URL=mysql+pymysql://root:@localhost:3306/horarios_control
+DATABASE_URL=mysql+pymysql://usuario:password@localhost:3306/horarios_control
 ```
 
-Si tu XAMPP tiene password para `root`, ajusta la URL:
+No versionar contrasenas reales.
 
-```env
-DATABASE_URL=mysql+pymysql://root:TU_PASSWORD@localhost:3306/horarios_control
-```
+## Backend
 
-## Configuracion backend
+### 1. Crear entorno virtual
 
-Desde `C:\dev\horarios_control\backend`:
+Desde la raiz del proyecto:
 
 ```powershell
-python -m venv .venv
-.\.venv\Scripts\activate
-pip install -r requirements.txt
-copy .env.example .env
+py -3 -m venv backend\.venv
 ```
 
-Variables principales en `backend\.env`:
+### 2. Instalar dependencias
+
+```powershell
+backend\.venv\Scripts\python.exe -m pip install -r backend\requirements.txt
+```
+
+Dependencias principales:
+
+- Flask 3.0.3.
+- Flask-SQLAlchemy.
+- Flask-Migrate.
+- Flask-CORS.
+- PyMySQL.
+- Waitress 2.1.2 para produccion.
+- openpyxl para Excel.
+- reportlab para PDF.
+- pyzkfp como soporte de integracion biometrica.
+
+### 3. Configurar variables de entorno
+
+Para produccion:
+
+```powershell
+Copy-Item backend\.env.production.example backend\.env
+```
+
+Editar `backend/.env` y configurar valores reales.
+
+Variables relevantes:
 
 ```env
-SECRET_KEY=change-this-secret
-DATABASE_URL=mysql+pymysql://root:@localhost:3306/horarios_control
-CORS_ORIGINS=http://localhost:5173
-FLASK_APP=run.py
-FLASK_DEBUG=1
-FINGERPRINT_PROVIDER=mock
+SECRET_KEY=CAMBIAR_POR_UN_VALOR_LARGO_Y_ALEATORIO
+DATABASE_URL=mysql+pymysql://usuario:password@localhost:3306/horarios_control
+CORS_ORIGINS=http://127.0.0.1:5000,http://localhost:5000
+FLASK_DEBUG=0
+FINGERPRINT_PROVIDER=zk9500
+ZKTECO_DEVICE_INDEX=0
+ZKTECO_CAPTURE_TIMEOUT_SECONDS=30
+ZKTECO_ENROLL_SAMPLES=3
+ZKTECO_MATCH_THRESHOLD=1
 SESSION_COOKIE_SECURE=false
-SESSION_COOKIE_NAME=horarios_session
-MAX_CONTENT_LENGTH=2097152
 CSRF_PROTECT=true
+WAITRESS_HOST=127.0.0.1
+WAITRESS_PORT=5000
 ```
 
-En produccion:
+Para HTTPS, usar:
 
-- Cambiar `SECRET_KEY`.
-- Usar HTTPS.
-- Cambiar `SESSION_COOKIE_SECURE=true`.
-- Restringir `CORS_ORIGINS` al dominio real.
+```env
+SESSION_COOKIE_SECURE=true
+```
 
-## Migraciones
+### 4. Migraciones
 
-Desde `C:\dev\horarios_control\backend`:
+Desde `backend/`:
 
 ```powershell
+cd backend
 .\.venv\Scripts\python.exe -m flask --app run.py db upgrade
 ```
 
-La migracion inicial crea:
+Esto crea o actualiza las tablas segun las migraciones existentes.
 
-- `administradores`
-- `trabajadores`
-- `plantillas_horario`
-- `horarios_trabajadores`
-- `huellas`
-- `marcaciones`
-- `auditoria`
+### 5. Crear administrador inicial
 
-## Datos iniciales
-
-Crear plantillas base:
-
-```powershell
-.\.venv\Scripts\python.exe -m flask --app run.py seed-horarios
-```
-
-Crear administrador:
+Desde `backend/`:
 
 ```powershell
 .\.venv\Scripts\python.exe -m flask --app run.py crear-admin
 ```
 
-El comando solicita la contrasena por consola y guarda hash seguro, no texto plano.
+El comando solicita usuario, nombre, apellido y contrasena. No hay credenciales por defecto.
 
-## Ejecutar backend
+### 6. Crear plantillas iniciales de horario
 
-Desde `C:\dev\horarios_control`:
-
-```powershell
-backend\.venv\Scripts\python.exe backend\run.py
-```
-
-Salud:
-
-```text
-GET http://127.0.0.1:5000/api/health
-```
-
-Respuesta esperada:
-
-```json
-{"status":"ok"}
-```
-
-## Configuracion frontend
-
-Desde `C:\dev\horarios_control\frontend`:
+Opcional:
 
 ```powershell
+.\.venv\Scripts\python.exe -m flask --app run.py seed-horarios
+```
+
+Crea plantillas iniciales si no existen.
+
+## Frontend
+
+### Desarrollo
+
+```powershell
+cd frontend
 npm install
-copy .env.example .env
+npm run dev
 ```
 
-Variable principal:
+En desarrollo, `frontend/.env` puede usar:
 
 ```env
 VITE_API_URL=http://localhost:5000/api
 ```
 
-Ejecutar:
+### Build de Produccion
 
 ```powershell
-npm run dev -- --host 127.0.0.1 --port 5173
+cd frontend
+npm install
+npm run build
+```
+
+Resultado:
+
+```text
+frontend/dist/
+```
+
+En produccion, Flask sirve `frontend/dist` y el frontend usa `/api` como base cuando se compila sin `VITE_API_URL`.
+
+## ZKTeco ZK9500
+
+La integracion real usa:
+
+```text
+Marca: ZKTeco
+Modelo: ZK9500
+SDK: ZKFinger Standard SDK 5.3.0.33
+Driver: ZKTeco / FPSensor
+Conexion: USB
+```
+
+El lector fue probado fisicamente en el equipo de desarrollo. El demo oficial C# logro captura real (`MESSAGE_CAPTURED_OK`) y obtuvo template (`CapTmp`).
+
+### Instalacion del lector
+
+1. Conectar el ZK9500 por USB directo a la computadora.
+2. Instalar el driver oficial ZKTeco incluido con el SDK.
+3. Confirmar en Administrador de dispositivos que el lector aparece correctamente y sin errores.
+4. Instalar ZKFinger Standard SDK 5.3.0.33.
+5. Confirmar que existen archivos del bridge en:
+
+```text
+backend/zk9500_bridge/bin/
+```
+
+Archivos esperados, segun instalacion actual:
+
+```text
+Zk9500Bridge.exe
+libzkfp.dll
+libzkfpcsharp.dll
+libzksensorcore.dll
+ZKFPCap.dll
+zkfinger10.dll
+zkfinger10-32.dll
+zkfpslibLow.dll
+ZKFPSensors/
+```
+
+6. Activar proveedor real en `backend/.env`:
+
+```env
+FINGERPRINT_PROVIDER=zk9500
+```
+
+`FINGERPRINT_PROVIDER=mock` queda reservado solo para desarrollo y pruebas automatizadas.
+
+### Verificar lector
+
+Desde la raiz del proyecto:
+
+```powershell
+backend\.venv\Scripts\python.exe backend\scripts\diagnostico_zkteco.py
+```
+
+Tambien puede comprobarse el bridge directamente:
+
+```powershell
+backend\zk9500_bridge\bin\Zk9500Bridge.exe status
+```
+
+No se requiere Visual Studio en la PC final porque el bridge ya esta compilado. Si se recompila el bridge, usar el SDK oficial y respetar la arquitectura compatible con las DLL incluidas.
+
+## Ejecutar en Desarrollo
+
+Terminal 1:
+
+```powershell
+cd backend
+.\.venv\Scripts\python.exe run.py
+```
+
+Terminal 2:
+
+```powershell
+cd frontend
+npm run dev
+```
+
+URLs comunes en desarrollo:
+
+```text
+Frontend: http://127.0.0.1:5173
+Backend API: http://127.0.0.1:5000/api
+```
+
+## Deploy Produccion
+
+### Opcion recomendada con scripts
+
+Desde la raiz del proyecto:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\setup-windows.ps1
+```
+
+Configurar entorno:
+
+```powershell
+Copy-Item backend\.env.production.example backend\.env
+notepad backend\.env
+```
+
+Crear base de datos en MySQL:
+
+```sql
+CREATE DATABASE horarios_control
+CHARACTER SET utf8mb4
+COLLATE utf8mb4_unicode_ci;
+```
+
+Ejecutar migraciones:
+
+```powershell
+cd backend
+.\.venv\Scripts\python.exe -m flask --app run.py db upgrade
+cd ..
+```
+
+Crear administrador:
+
+```powershell
+cd backend
+.\.venv\Scripts\python.exe -m flask --app run.py crear-admin
+cd ..
+```
+
+Compilar frontend:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\build-production.ps1
+```
+
+Iniciar produccion:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\start-production.ps1
 ```
 
 Abrir:
 
 ```text
-http://127.0.0.1:5173
+http://127.0.0.1:5000
 ```
 
-Build:
+### Opcion manual
+
+```powershell
+py -3 -m venv backend\.venv
+backend\.venv\Scripts\python.exe -m pip install -r backend\requirements.txt
+cd frontend
+npm install
+npm run build
+cd ..
+cd backend
+.\.venv\Scripts\python.exe wsgi.py
+```
+
+## Primer Uso
+
+```text
+Crear administrador
+      ↓
+Iniciar sesion en panel administrativo
+      ↓
+Crear trabajador
+      ↓
+Registrar huella con 3 capturas
+      ↓
+Asignar horario
+      ↓
+Trabajador abre pantalla de marcaje
+      ↓
+Presiona MARCAR
+      ↓
+Coloca dedo en el ZK9500
+      ↓
+Sistema registra automaticamente la marcacion correspondiente
+```
+
+## Uso del Trabajador
+
+El trabajador no inicia sesion y no selecciona el tipo de marcacion.
+
+Flujo:
+
+```text
+Pantalla de marcaje
+      ↓
+MARCAR
+      ↓
+Colocar dedo
+      ↓
+ZK9500 captura huella
+      ↓
+Backend identifica trabajador
+      ↓
+Backend consulta horario y marcaciones existentes
+      ↓
+Backend determina siguiente funcion
+      ↓
+Guarda hora real del servidor
+```
+
+Secuencia con almuerzo:
+
+```text
+ENTRADA
+↓
+SALIDA DE ALMUERZO
+↓
+ENTRADA DE ALMUERZO
+↓
+SALIDA
+```
+
+Secuencia sin almuerzo:
+
+```text
+ENTRADA
+↓
+SALIDA
+```
+
+Si la jornada ya esta completa, no se crea otra marcacion.
+
+## Uso del Administrador
+
+El administrador puede:
+
+- Iniciar sesion.
+- Crear trabajadores.
+- Registrar huella obligatoria para trabajadores en modo real.
+- Asignar horarios.
+- Crear plantillas de horario con o sin almuerzo.
+- Consultar marcaciones.
+- Ver dashboard.
+- Generar reportes.
+- Descargar Excel.
+- Descargar PDF.
+- Activar o desactivar trabajadores.
+- Consultar parametros operativos.
+
+## Creacion de Trabajadores
+
+En modo biometrico real:
+
+```text
+Datos personales
+      ↓
+Registrar huella
+      ↓
+3 capturas del mismo dedo
+      ↓
+Template biometrico
+      ↓
+Guardar trabajador activo
+```
+
+El sistema evita duplicar huellas ya registradas.
+
+## Seguridad
+
+Antes de produccion revisar:
+
+- `backend/.env` no debe subirse al repositorio.
+- `SECRET_KEY` debe ser largo y aleatorio.
+- `FLASK_DEBUG=0` en produccion.
+- `SESSION_COOKIE_SECURE=true` si se usa HTTPS.
+- `CSRF_PROTECT=true`.
+- `CORS_ORIGINS` debe contener solo origenes permitidos.
+- No usar `*` con sesiones/cookies.
+- No registrar templates biometricos completos en logs.
+- Proteger backups de base de datos.
+- Restringir acceso fisico al equipo con lector.
+
+## Backups
+
+Con XAMPP instalado en la ruta predeterminada:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\backup-db.ps1
+```
+
+El script genera archivos en:
+
+```text
+backups/
+```
+
+Comando manual equivalente:
+
+```powershell
+C:\xampp\mysql\bin\mysqldump.exe -u root --databases horarios_control --result-file=backups\horarios_control.sql
+```
+
+Si su MySQL usa contrasena, ajustar el comando segun la politica local y no escribir contrasenas en archivos versionados.
+
+## Restauracion
+
+Crear la base si no existe y restaurar:
+
+```powershell
+C:\xampp\mysql\bin\mysql.exe -u root < backups\horarios_control.sql
+```
+
+Si usa usuario con contrasena, ejecutar el comando de forma segura segun su instalacion.
+
+## Actualizacion del Sistema
+
+```powershell
+git pull origin deploy-ready
+backend\.venv\Scripts\python.exe -m pip install -r backend\requirements.txt
+cd backend
+.\.venv\Scripts\python.exe -m flask --app run.py db upgrade
+cd ..
+powershell -ExecutionPolicy Bypass -File scripts\build-production.ps1
+```
+
+Reiniciar el proceso de produccion despues de actualizar.
+
+## Pruebas
+
+### Backend
+
+Desde `backend/`:
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest tests -q
+```
+
+### Frontend
+
+Desde `frontend/`:
 
 ```powershell
 npm run build
 ```
 
-## Rutas principales
+### Salud del sistema
 
-Frontend:
-
-- `/`
-- `/marcar`
-- `/admin/login`
-- `/admin`
-- `/admin/trabajadores`
-- `/admin/horarios`
-- `/admin/marcaciones`
-- `/admin/reportes`
-
-API:
-
-- `POST /api/auth/login`
-- `POST /api/auth/logout`
-- `GET /api/auth/me`
-- `GET|POST|PUT|PATCH /api/admin/trabajadores`
-- `GET|POST|PUT|PATCH /api/admin/horarios`
-- `GET /api/admin/marcaciones`
-- `GET /api/admin/marcaciones/dashboard`
-- `GET /api/admin/reportes`
-- `GET /api/admin/reportes/excel`
-- `GET /api/admin/reportes/pdf`
-- `POST /api/biometria/trabajadores/<id>/registrar`
-- `POST /api/biometria/identificar`
-- `POST /api/marcaciones/biometrica`
-
-## Flujo trabajador
-
-La pantalla publica `/marcar` no solicita usuario, password, codigo, nombre ni ID.
-
-Flujo:
-
-1. Trabajador selecciona tipo de marcacion.
-2. Sistema solicita huella.
-3. Backend identifica trabajador por huella.
-4. Backend toma la hora oficial del servidor.
-5. Backend consulta horario individual vigente.
-6. Backend valida secuencia y duplicados.
-7. Backend calcula estado y minutos.
-8. Backend guarda marcacion.
-
-React no debe enviar:
-
-- `trabajador_id`
-- `fecha`
-- `hora`
-- `estado`
-- `minutos_diferencia`
-
-Si esos campos se envian manualmente, el backend los ignora.
-
-## Biometria
-
-### Modo desarrollo
-
-```env
-FINGERPRINT_PROVIDER=mock
-```
-
-En modo mock se usa un identificador como `FP0001`.
-
-### Modo lector real ZKTeco ZK9500
-
-Datos esperados:
-
-- Marca: ZKTeco.
-- Modelo: ZK9500.
-- Sistema principal: Windows 10 64 bits.
-- Compatibilidad secundaria: Windows 7 y Windows XP.
-- SDK: ZKFinger SDK for Windows.
-- Driver: incluido en ZKFinger SDK for Windows.
-- Conexion: USB 2.0, compatible USB 1.1, USB Type-A.
-- Algoritmo: ZKFinger V10.0.
-- Resolucion: 500 dpi.
-- Imagen: 300 x 400 px.
-
-Config:
-
-```env
-FINGERPRINT_PROVIDER=real
-ZKTECO_DEVICE_INDEX=0
-ZKTECO_CAPTURE_TIMEOUT_SECONDS=15
-ZKTECO_ENROLL_SAMPLES=3
-ZKTECO_MATCH_THRESHOLD=1
-```
-
-Requisitos antes de activar `real`:
-
-1. Instalar driver oficial.
-2. Instalar ZKFinger SDK for Windows.
-3. Verificar que Windows reconoce el lector.
-4. Exponer un wrapper Python compatible con `ZKFP2`.
-
-Si falta SDK, driver o lector, la API responde:
-
-```json
-{
-  "success": false,
-  "code": "LECTOR_NO_DISPONIBLE"
-}
-```
-
-## Reportes
-
-Pantalla:
+Con el backend iniciado:
 
 ```text
-/admin/reportes
+http://127.0.0.1:5000/api/health
 ```
 
-Formatos:
+## Solucion de Problemas
 
-- Excel: `GET /api/admin/reportes/excel`
-- PDF: `GET /api/admin/reportes/pdf`
+### ZK9500 no detectado
 
-Ambos respetan filtros:
+- Revisar cable USB.
+- Probar otro puerto USB directo.
+- Revisar Administrador de dispositivos.
+- Confirmar driver oficial ZKTeco / FPSensor.
+- Confirmar instalacion del ZKFinger SDK.
+- Ejecutar `backend\zk9500_bridge\bin\Zk9500Bridge.exe status`.
 
-- Trabajador.
-- Tipo de marcacion.
-- Estado.
-- Fecha.
-- Desde.
-- Hasta.
+### Lector detectado pero no lee
 
-## Auditoria
+- Confirmar `FINGERPRINT_PROVIDER=zk9500`.
+- Confirmar DLLs en `backend/zk9500_bridge/bin/`.
+- Cerrar demos oficiales u otros procesos que puedan estar usando el lector.
+- Ejecutar `backend\scripts\diagnostico_zkteco.py`.
+- Confirmar que el trabajador tenga huella activa.
 
-Se registran acciones administrativas en `auditoria`:
+### Base de datos no conecta
 
-- `CREAR_TRABAJADOR`
-- `EDITAR_TRABAJADOR`
-- `ACTIVAR_TRABAJADOR`
-- `DESACTIVAR_TRABAJADOR`
-- `ASIGNAR_HORARIO`
-- `MODIFICAR_HORARIO`
-- `REGISTRAR_HUELLA`
-- `REEMPLAZAR_HUELLA`
+- Verificar que MySQL/XAMPP este iniciado.
+- Confirmar que el puerto configurado coincida con `DATABASE_URL`.
+- Confirmar usuario, contrasena y nombre de base.
+- Ejecutar migraciones con `flask db upgrade`.
 
-Cada registro guarda administrador, entidad, entidad_id, descripcion, fecha_hora e IP.
+### Login no funciona
 
-## Seguridad
+- Confirmar backend iniciado.
+- Confirmar que existe administrador activo.
+- Revisar cookies del navegador.
+- Revisar `CORS_ORIGINS` si frontend y backend estan separados.
+- Confirmar `CSRF_PROTECT=true` y que el frontend use la API actual.
 
-Medidas implementadas:
+### Frontend no carga
 
-- Passwords con hash.
-- Sesion Flask.
-- Cookie `HttpOnly`.
-- Cookie `SameSite=Lax`.
-- CSRF por sesion para mutaciones administrativas.
-- Cabeceras:
-  - `X-Content-Type-Options: nosniff`
-  - `X-Frame-Options: DENY`
-  - `Referrer-Policy: no-referrer`
-  - `Cache-Control: no-store`
-- CORS restringido por `CORS_ORIGINS`.
-- Templates biometricos no se devuelven en APIs normales.
-- Hora oficial tomada solo en backend.
+- Ejecutar `npm run build`.
+- Confirmar que exista `frontend/dist/index.html`.
+- Iniciar produccion con `scripts/start-production.ps1`.
+- Abrir `http://127.0.0.1:5000`.
 
-Pendiente para produccion real:
+### Marcacion no se registra
 
-- HTTPS.
-- `SESSION_COOKIE_SECURE=true`.
-- Rotacion segura de `SECRET_KEY`.
-- Politica de backup automatizado.
-- Hardening del servidor web usado para despliegue.
+- Confirmar que el trabajador este activo.
+- Confirmar que tenga huella activa.
+- Confirmar que tenga horario asignado para la jornada.
+- Confirmar que la jornada no este completa.
+- Revisar estado del lector ZK9500.
 
-## Pruebas
+## Archivos que no deben versionarse
 
-El proyecto no usa `pytest` instalado. Se ejecuta con runner directo:
+El repositorio ignora:
 
-```powershell
-backend\.venv\Scripts\python.exe -B -c "import sys, importlib.util; from pathlib import Path; sys.path.insert(0, 'backend'); total=0; failures=[]; base=Path('backend/tests');\nfor path in sorted(base.glob('test_*.py')):\n    spec=importlib.util.spec_from_file_location(path.stem, path); mod=importlib.util.module_from_spec(spec); spec.loader.exec_module(mod)\n    for name in sorted(n for n in dir(mod) if n.startswith('test_')):\n        total += 1\n        try:\n            getattr(mod, name)()\n        except Exception as exc:\n            failures.append((path.name, name, repr(exc)))\nif failures:\n    print('failures:')\n    [print(f'{file}::{name} {err}') for file,name,err in failures]\n    raise SystemExit(1)\nprint(f'{total} tests ok')"
-```
+- `backend/.env`.
+- `frontend/.env`.
+- entornos virtuales.
+- `node_modules`.
+- `frontend/dist`.
+- caches.
+- backups.
+- logs.
 
-Pruebas cubiertas:
-
-- Salud API.
-- Modelos.
-- Autenticacion.
-- Trabajadores.
-- Horarios.
-- Biometria mock.
-- Secuencia de marcaciones.
-- Puntualidad.
-- Registro completo.
-- Panel de marcaciones.
-- Dashboard.
-- Reportes pantalla.
-- Excel.
-- PDF.
-- Auditoria.
-- Proveedor real ZK9500 con SDK falso.
-- Seguridad CSRF.
-- Pruebas integrales.
-
-## Backups
-
-Backup manual con XAMPP:
-
-```powershell
-C:\xampp\mysql\bin\mysqldump.exe -u root horarios_control > C:\backups\horarios_control.sql
-```
-
-Si MySQL root tiene password:
-
-```powershell
-C:\xampp\mysql\bin\mysqldump.exe -u root -p horarios_control > C:\backups\horarios_control.sql
-```
-
-Restaurar:
-
-```powershell
-C:\xampp\mysql\bin\mysql.exe -u root horarios_control < C:\backups\horarios_control.sql
-```
-
-Recomendacion operativa:
-
-- Backup diario de MySQL.
-- Copia externa semanal.
-- Probar restauracion periodicamente.
-- Respaldar tambien `.env` de produccion fuera del repositorio.
-
-## Revision final FASE 20
-
-Checklist revisado:
-
-- Backend Flask modular.
-- Frontend React modular.
-- Base de datos MySQL documentada.
-- Migracion inicial disponible.
-- Horarios individuales e historial.
-- Secuencia obligatoria.
-- Marcacion por huella.
-- Reportes Excel y PDF.
-- Auditoria administrativa.
-- Seguridad base.
-- Integracion biometrica desacoplada.
-- Pruebas integrales.
-
-No se avanza a FASE 21 desde esta fase.
+Las DLL necesarias del bridge biometrico no se ignoran porque forman parte del despliegue local del ZK9500.
