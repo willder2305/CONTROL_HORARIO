@@ -1,6 +1,23 @@
 import api from './api';
+import {
+  enrollFingerprintWithAgent,
+  getAgentStatus,
+  useLocalAgent,
+} from './localAgentService';
 
 export async function obtenerEstadoLector() {
+  if (useLocalAgent()) {
+    const response = await getAgentStatus();
+    return {
+      success: response.success,
+      data: {
+        ...(response.data || {}),
+        provider: 'local_agent',
+        mode: 'local-agent',
+      },
+    };
+  }
+
   const response = await api.get('/biometria/device/status');
   return response.data;
 }
@@ -10,8 +27,14 @@ export async function registrarHuella(trabajadorId, fingerprintId) {
   if (fingerprintId) {
     payload.fingerprint_id = fingerprintId;
   }
+
+  if (useLocalAgent()) {
+    const enrollment = await enrollFingerprintWithAgent();
+    payload.template_biometrico = enrollment.data?.template_biometrico || enrollment.template_biometrico;
+  }
+
   const response = await api.post(
-    `/biometria/trabajadores/${trabajadorId}/registrar`,
+    '/biometria/trabajadores/' + trabajadorId + '/registrar',
     payload,
     { timeout: 65000 },
   );

@@ -1,6 +1,11 @@
 import api from './api';
+import { identifyAndMarkWithAgent, useLocalAgent } from './localAgentService';
 
 export async function registrarMarcacionBiometrica() {
+  if (useLocalAgent()) {
+    return identifyAndMarkWithAgent();
+  }
+
   const payload = {};
   const response = await api.post('/marcaciones/biometrica', payload, { timeout: 45000 });
   return response.data;

@@ -6,6 +6,7 @@ from app.models import Auditoria, Huella, HorarioTrabajador, Trabajador
 from app.routes.auth import current_admin, require_admin
 from app.services.fingerprint import get_fingerprint_provider
 from app.services.fingerprint.real_provider import FingerprintDeviceError, FingerprintDuplicateError
+from app.services.fingerprint.template_utils import template_from_agent_payload
 
 trabajadores_bp = Blueprint("trabajadores", __name__)
 
@@ -64,18 +65,6 @@ def serialize_worker(worker):
 
 
 def next_worker_code():
-    """
-    Genera el siguiente codigo EMP-0001 para nuevos trabajadores.
-
-    Recibe:
-        No recibe parametros.
-
-    Utilizado desde:
-        POST /api/admin/trabajadores
-
-    Retorna:
-        Codigo automatico disponible.
-    """
     last_code = (
         db.session.query(Trabajador.codigo)
         .filter(Trabajador.codigo.like("EMP-%"))
@@ -117,6 +106,21 @@ def audit(action, entity_id, description):
             ip=request.remote_addr,
         )
     )
+
+
+def resolve_create_template(data, provider, fingerprint_id):
+    template = template_from_agent_payload(data)
+    if template is not None:
+        return template, "local_agent", "ControlHorarioBiometricAgent"
+
+    if provider.provider_name == "local_agent":
+        raise FingerprintDeviceError(
+            "Debe capturar la huella desde ControlHorarioBiometricAgent antes de crear el trabajador."
+        )
+
+    active_fingerprints = Huella.query.filter_by(activa=True).all()
+    template = provider.enroll(fingerprint_id, active_fingerprints=active_fingerprints)
+    return template, provider.provider_name, provider.version
 
 
 @trabajadores_bp.get("")
@@ -183,10 +187,15 @@ def create_worker():
         )
 
     template = None
+    provider_name = provider.provider_name
+    provider_version = provider.version
     if enroll_fingerprint:
         try:
-            active_fingerprints = Huella.query.filter_by(activa=True).all()
-            template = provider.enroll(fingerprint_id, active_fingerprints=active_fingerprints)
+            template, provider_name, provider_version = resolve_create_template(
+                data,
+                provider,
+                fingerprint_id,
+            )
         except ValueError as error:
             return (
                 jsonify(
@@ -234,8 +243,8 @@ def create_worker():
             Huella(
                 trabajador_id=worker.id,
                 template_biometrico=template,
-                proveedor=provider.provider_name,
-                version=provider.version,
+                proveedor=provider_name,
+                version=provider_version,
                 activa=True,
             )
         )

@@ -3,8 +3,9 @@ from flask import Blueprint, jsonify, request
 from app import db
 from app.models import Auditoria, Huella, Trabajador
 from app.routes.auth import current_admin, require_admin
-from app.services.fingerprint.real_provider import FingerprintDeviceError, FingerprintDuplicateError
 from app.services.fingerprint import get_fingerprint_provider
+from app.services.fingerprint.real_provider import FingerprintDeviceError, FingerprintDuplicateError
+from app.services.fingerprint.template_utils import template_from_agent_payload
 
 biometria_bp = Blueprint("biometria", __name__)
 
@@ -45,6 +46,20 @@ def audit(action, entity_id, description):
     )
 
 
+def resolve_enrollment_template(data, worker, provider, fingerprint_id):
+    template = template_from_agent_payload(data, excluded_worker_id=worker.id)
+    if template is not None:
+        return template, "local_agent", "ControlHorarioBiometricAgent"
+
+    active_fingerprints = (
+        Huella.query.filter_by(activa=True)
+        .filter(Huella.trabajador_id != worker.id)
+        .all()
+    )
+    template = provider.enroll(fingerprint_id, active_fingerprints=active_fingerprints)
+    return template, provider.provider_name, provider.version
+
+
 @biometria_bp.post("/trabajadores/<int:worker_id>/registrar")
 @require_admin
 def enroll_worker_fingerprint(worker_id):
@@ -54,12 +69,12 @@ def enroll_worker_fingerprint(worker_id):
     provider = get_fingerprint_provider()
 
     try:
-        active_fingerprints = (
-            Huella.query.filter_by(activa=True)
-            .filter(Huella.trabajador_id != worker.id)
-            .all()
+        template, provider_name, provider_version = resolve_enrollment_template(
+            data,
+            worker,
+            provider,
+            fingerprint_id,
         )
-        template = provider.enroll(fingerprint_id, active_fingerprints=active_fingerprints)
     except ValueError as error:
         return (
             jsonify(
@@ -102,8 +117,8 @@ def enroll_worker_fingerprint(worker_id):
     fingerprint = Huella(
         trabajador_id=worker.id,
         template_biometrico=template,
-        proveedor=provider.provider_name,
-        version=provider.version,
+        proveedor=provider_name,
+        version=provider_version,
         activa=True,
     )
     db.session.add(fingerprint)

@@ -30,3 +30,7 @@ backend/zk9500_bridge/bin_x64/
 venv/
 *.log
 backups/
+# Local biometric agent private config/runtime
+local-agent/appsettings.json
+local-agent/logs/
+local-agent/runtime/

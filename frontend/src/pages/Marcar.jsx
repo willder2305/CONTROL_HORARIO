@@ -8,25 +8,28 @@ function friendlyError(requestError) {
   if (code === 'HUELLA_NO_RECONOCIDA') {
     return 'Huella no reconocida. La huella no se encuentra registrada.';
   }
-  if (code === 'LECTOR_NO_DISPONIBLE') {
-    return 'Lector de huellas no disponible. Verifique la conexión del ZKTeco ZK9500.';
+  if (code === 'LECTOR_NO_DISPONIBLE' || code === 'LECTOR_NO_DETECTADO') {
+    return 'Lector de huellas no disponible. Verifique la conexion del ZKTeco ZK9500.';
+  }
+  if (code === 'AGENT_OFFLINE' || (!requestError.response && requestError.request)) {
+    return 'Servicio biometrico no disponible. Instale o inicie ControlHorarioBiometricAgent en esta computadora.';
   }
   if (code === 'HORARIO_NO_ASIGNADO') {
-    return 'No se puede realizar la marcación. No tiene un horario asignado para esta jornada.';
+    return 'No se puede realizar la marcacion. No tiene un horario asignado para esta jornada.';
   }
   if (code === 'TRABAJADOR_INACTIVO') {
-    return 'No se puede realizar la marcación. Consulte con el administrador.';
+    return 'No se puede realizar la marcacion. Consulte con el administrador.';
   }
   if (code === 'JORNADA_COMPLETADA') {
     return 'Jornada completada. Ya se registraron todas las marcaciones de esta jornada.';
   }
   if (code === 'MARCACION_RECIENTE') {
-    return 'La marcación ya se está procesando. Intente nuevamente en unos segundos.';
+    return 'La marcacion ya se esta procesando. Intente nuevamente en unos segundos.';
   }
   if (requestError.code === 'ECONNABORTED') {
-    return 'No se detectó ninguna huella. Intente nuevamente.';
+    return 'No se detecto ninguna huella. Intente nuevamente.';
   }
-  return requestError.response?.data?.message ?? 'No se pudo realizar la marcación.';
+  return requestError.response?.data?.message ?? 'No se pudo realizar la marcacion.';
 }
 
 export default function Marcar() {
@@ -88,8 +91,8 @@ export default function Marcar() {
 
           {result && (
             <div className="success-message mark-result">
-              <strong>Marcación realizada correctamente</strong>
-              <span>Función: {result.tipo}</span>
+              <strong>Marcacion realizada correctamente</strong>
+              <span>Funcion: {result.tipo}</span>
               <span>Hora registrada: {result.hora}</span>
             </div>
           )}

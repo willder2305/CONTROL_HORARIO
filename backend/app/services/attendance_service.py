@@ -417,39 +417,24 @@ def identificar_trabajador_por_huella(fingerprint_id):
     return {"success": True, "trabajador": fingerprint.trabajador}
 
 
-def registrar_marcacion_biometrica(tipo_marcacion=None, fingerprint_id=None, fecha_hora=None):
-    """
-    Registra una marcacion completa desde identificacion biometrica.
-
-    Recibe:
-        fingerprint_id opcional para proveedor mock y fecha_hora opcional solo para pruebas.
-        tipo_marcacion se conserva por compatibilidad interna, pero no decide la funcion.
-
-    Utilizado desde:
-        POST /api/marcaciones/biometrica.
-
-    Retorna:
-        Diccionario de resultado con marcacion serializada o error de validacion.
-    """
-    try:
-        identification = identificar_trabajador_por_huella(fingerprint_id)
-    except ValueError as error:
+def identificar_trabajador_por_huella_id(huella_id):
+    fingerprint = Huella.query.filter_by(id=huella_id, activa=True).first()
+    if not fingerprint or not fingerprint.trabajador:
         return {
             "success": False,
-            "code": "HUELLA_INVALIDA",
-            "message": str(error),
+            "code": "HUELLA_NO_RECONOCIDA",
+            "message": "Huella no reconocida.",
         }
-    except FingerprintDeviceError as error:
+    if not fingerprint.trabajador.activo:
         return {
             "success": False,
-            "code": "LECTOR_NO_DISPONIBLE",
-            "message": str(error),
+            "code": "TRABAJADOR_INACTIVO",
+            "message": "El trabajador identificado esta inactivo.",
         }
+    return {"success": True, "trabajador": fingerprint.trabajador}
 
-    if not identification["success"]:
-        return identification
 
-    trabajador = identification["trabajador"]
+def registrar_marcacion_para_trabajador(trabajador, fecha_hora=None):
     fecha_hora_real = fecha_hora or obtener_hora_actual()
     fecha = fecha_hora_real.date()
 
@@ -540,3 +525,39 @@ def registrar_marcacion_biometrica(tipo_marcacion=None, fingerprint_id=None, fec
             "horaRegistrada": mark.hora_real.strftime("%I:%M %p"),
         },
     }
+
+
+def registrar_marcacion_por_huella_autorizada(huella_id, fecha_hora=None):
+    identification = identificar_trabajador_por_huella_id(huella_id)
+    if not identification["success"]:
+        return identification
+    return registrar_marcacion_para_trabajador(identification["trabajador"], fecha_hora)
+
+
+def registrar_marcacion_biometrica(tipo_marcacion=None, fingerprint_id=None, fecha_hora=None):
+    """
+    Registra una marcacion completa desde identificacion biometrica local/mock.
+
+    En hosting productivo la identificacion real debe hacerla el agente local y
+    luego llamar a registrar_marcacion_por_huella_autorizada.
+    """
+    try:
+        identification = identificar_trabajador_por_huella(fingerprint_id)
+    except ValueError as error:
+        return {
+            "success": False,
+            "code": "HUELLA_INVALIDA",
+            "message": str(error),
+        }
+    except FingerprintDeviceError as error:
+        return {
+            "success": False,
+            "code": "LECTOR_NO_DISPONIBLE",
+            "message": str(error),
+        }
+
+    if not identification["success"]:
+        return identification
+
+    return registrar_marcacion_para_trabajador(identification["trabajador"], fecha_hora)
+
