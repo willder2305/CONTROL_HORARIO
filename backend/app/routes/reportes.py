@@ -1,3 +1,8 @@
+"""Modulo reportes del sistema de control de horarios.
+
+Agrupa la logica propia necesaria para esta responsabilidad sin exponer detalles de infraestructura.
+"""
+
 from flask import Blueprint, jsonify, request, send_file
 
 from app.models import Marcacion, Trabajador
@@ -9,6 +14,15 @@ reportes_bp = Blueprint("reportes", __name__)
 
 
 def build_summary(marks):
+    """
+    Atiende el endpoint Flask asociado a build_summary y devuelve una respuesta JSON acorde al resultado de la operacion.
+
+    Args:
+        marks: Dato utilizado por la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     total = len(marks)
     tardanzas = sum(1 for mark in marks if mark.estado == "TARDANZA")
     a_tiempo = sum(1 for mark in marks if mark.estado == "A_TIEMPO")
@@ -29,6 +43,15 @@ def build_summary(marks):
 
 
 def describe_filters(args):
+    """
+    Atiende el endpoint Flask asociado a describe_filters y devuelve una respuesta JSON acorde al resultado de la operacion.
+
+    Args:
+        args: Dato utilizado por la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     return {
         "trabajador_id": args.get("trabajador_id") or None,
         "tipo_marcacion": args.get("tipo_marcacion") or None,
@@ -40,6 +63,15 @@ def describe_filters(args):
 
 
 def describe_pdf_filters(args):
+    """
+    Atiende el endpoint Flask asociado a describe_pdf_filters y devuelve una respuesta JSON acorde al resultado de la operacion.
+
+    Args:
+        args: Dato utilizado por la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     fecha = args.get("fecha")
     desde = args.get("desde")
     hasta = args.get("hasta")
@@ -69,6 +101,15 @@ def describe_pdf_filters(args):
 
 
 def get_ordered_report_marks(args):
+    """
+    Atiende el endpoint Flask asociado a get_ordered_report_marks y devuelve una respuesta JSON acorde al resultado de la operacion.
+
+    Args:
+        args: Dato utilizado por la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     query = build_mark_query(args)
     return query.order_by(
         Marcacion.fecha.asc(),
@@ -80,6 +121,12 @@ def get_ordered_report_marks(args):
 @reportes_bp.get("")
 @require_admin
 def screen_report():
+    """
+    Atiende el endpoint Flask asociado a screen_report y devuelve una respuesta JSON acorde al resultado de la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     try:
         marks = get_ordered_report_marks(request.args)
     except ValueError:
@@ -109,6 +156,12 @@ def screen_report():
 @reportes_bp.get("/excel")
 @require_admin
 def excel_report():
+    """
+    Atiende el endpoint Flask asociado a excel_report y devuelve una respuesta JSON acorde al resultado de la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     try:
         marks = get_ordered_report_marks(request.args)
     except ValueError:
@@ -136,6 +189,12 @@ def excel_report():
 @reportes_bp.get("/pdf")
 @require_admin
 def pdf_report():
+    """
+    Atiende el endpoint Flask asociado a pdf_report y devuelve una respuesta JSON acorde al resultado de la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     try:
         marks = get_ordered_report_marks(request.args)
         filters = describe_pdf_filters(request.args)

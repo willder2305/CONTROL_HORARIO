@@ -1,4 +1,7 @@
-$ErrorActionPreference = "Stop"
+<#
+Valida prerrequisitos de produccion e inicia Waitress mediante backend\wsgi.py.
+No crea configuracion; requiere backend\.env y frontend\dist previamente preparados.
+#>$ErrorActionPreference = "Stop"
 
 if (-not (Test-Path "backend\.env")) {
     throw "No existe backend\.env. Copie backend\.env.production.example a backend\.env y configure sus valores."

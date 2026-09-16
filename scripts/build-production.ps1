@@ -1,4 +1,7 @@
-$ErrorActionPreference = "Stop"
+<#
+Instala dependencias del frontend y genera frontend\dist para despliegue.
+No publica archivos ni modifica configuracion de servidor.
+#>$ErrorActionPreference = "Stop"
 
 Write-Host "[1/2] Instalando dependencias frontend..."
 Push-Location frontend

@@ -1,3 +1,5 @@
+; Instalador Inno Setup del agente biometrico local.
+; Copia binarios x86, conserva appsettings existente en ProgramData y registra el inicio automatico mediante los scripts incluidos.
 #define MyAppName "Control Horario Biometric Agent"
 #define MyAppVersion "1.0.0"
 #define MyAppPublisher "Control Horario"

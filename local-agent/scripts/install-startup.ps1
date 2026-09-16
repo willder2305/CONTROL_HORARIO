@@ -1,4 +1,7 @@
-$ErrorActionPreference = "Stop"
+<#
+Registra ControlHorarioBiometricAgent como tarea de inicio de sesión y lo inicia inmediatamente.
+Ejecutar una vez después de instalar y configurar el agente; modifica la tarea programada del usuario actual.
+#>$ErrorActionPreference = "Stop"
 $taskName = "ControlHorarioBiometricAgent"
 $installDir = Split-Path -Parent $PSScriptRoot
 $exe = Join-Path $installDir "ControlHorarioBiometricAgent.exe"

@@ -1,3 +1,8 @@
+"""Inicializacion de Flask para despliegue.
+
+Configura extensiones, blueprints de API y el servido del frontend compilado para soportar rutas SPA.
+"""
+
 from pathlib import Path
 
 from flask import Flask, abort, send_from_directory
@@ -13,6 +18,12 @@ migrate = Migrate()
 
 
 def create_app(config_class=Config):
+    """
+    Construye la aplicacion Flask de produccion.
+
+    Registra CORS, persistencia, seguridad, API y las rutas que sirven
+    el build React sin interceptar solicitudes bajo /api.
+    """
     app = Flask(__name__)
     app.config.from_object(config_class)
 
@@ -52,16 +63,24 @@ def create_app(config_class=Config):
 
 
 def register_frontend_routes(app):
+    """
+    Registra el servido del build React y el fallback de rutas SPA.
+
+    Los recursos existentes se sirven desde dist; las rutas cliente devuelven
+    index.html y las solicitudes de API permanecen fuera de este fallback.
+    """
     frontend_dist = Path(__file__).resolve().parents[2] / "frontend" / "dist"
     if not frontend_dist.exists():
         return
 
     @app.get("/")
     def serve_frontend_index():
+        """Sirve el documento inicial del frontend compilado."""
         return send_from_directory(frontend_dist, "index.html")
 
     @app.get("/<path:requested_path>")
     def serve_frontend_asset_or_route(requested_path):
+        """Sirve recursos de dist o devuelve la SPA para rutas del cliente."""
         if requested_path.startswith("api/"):
             abort(404)
         target = frontend_dist / requested_path

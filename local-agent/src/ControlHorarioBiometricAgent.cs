@@ -10,6 +10,9 @@ using System.Web.Script.Serialization;
 
 namespace ControlHorarioBiometricAgent
 {
+    /// <summary>
+    /// Almacena la configuracion no secreta del listener local, backend, identidad del dispositivo y timeout de captura.
+    /// </summary>
     internal class AgentConfig
     {
         public string ListenUrl = "http://127.0.0.1:8765/";
@@ -21,6 +24,9 @@ namespace ControlHorarioBiometricAgent
         public List<string> AllowedOrigins = new List<string>();
     }
 
+    /// <summary>
+    /// Conserva el codigo de salida, las salidas y los pares clave-valor devueltos por Zk9500Bridge.
+    /// </summary>
     internal class BridgeResult
     {
         public int ExitCode;
@@ -29,11 +35,17 @@ namespace ControlHorarioBiometricAgent
         public Dictionary<string, string> Data = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
     }
 
+    /// <summary>
+    /// Agrupa el proceso que expone el agente local o ejecuta el bridge de integracion con ZKFinger.
+    /// </summary>
     internal static class Program
     {
         private static readonly JavaScriptSerializer Json = new JavaScriptSerializer();
         private static AgentConfig Config;
 
+        /// <summary>
+        /// Inicializa el proceso del agente o bridge, procesa el comando solicitado y garantiza la liberacion de recursos nativos.
+        /// </summary>
         public static void Main(string[] args)
         {
             Log("Agente iniciado");
@@ -64,6 +76,9 @@ namespace ControlHorarioBiometricAgent
             }
         }
 
+        /// <summary>
+        /// Carga appsettings.json o su ejemplo y aplica valores predeterminados seguros para ejecucion local.
+        /// </summary>
         private static AgentConfig LoadConfig()
         {
             var config = new AgentConfig();
@@ -91,6 +106,9 @@ namespace ControlHorarioBiometricAgent
             return config;
         }
 
+        /// <summary>
+        /// Obtiene una cadena de configuracion conservando un valor predeterminado si falta o es nula.
+        /// </summary>
         private static string GetString(Dictionary<string, object> data, string key, string fallback)
         {
             object value;
@@ -98,6 +116,9 @@ namespace ControlHorarioBiometricAgent
             return Convert.ToString(value);
         }
 
+        /// <summary>
+        /// Obtiene un entero de configuracion sin fallar ante valores ausentes o invalidos.
+        /// </summary>
         private static int GetInt(Dictionary<string, object> data, string key, int fallback)
         {
             object value;
@@ -106,6 +127,9 @@ namespace ControlHorarioBiometricAgent
             return int.TryParse(Convert.ToString(value), out parsed) ? parsed : fallback;
         }
 
+        /// <summary>
+        /// Normaliza un valor de configuracion a lista de cadenas para AllowedOrigins.
+        /// </summary>
         private static List<string> GetStringList(Dictionary<string, object> data, string key)
         {
             var result = new List<string>();
@@ -131,6 +155,9 @@ namespace ControlHorarioBiometricAgent
             return result;
         }
 
+        /// <summary>
+        /// Enruta las solicitudes HTTP locales del agente hacia health, estado del dispositivo, enrolamiento o identificacion.
+        /// </summary>
         private static void HandleRequest(HttpListenerContext context)
         {
             try
@@ -196,6 +223,9 @@ namespace ControlHorarioBiometricAgent
             }
         }
 
+        /// <summary>
+        /// Consulta el bridge para publicar el estado real del SDK y del lector ZK9500.
+        /// </summary>
         private static void HandleDeviceStatus(HttpListenerContext context)
         {
             var result = RunBridge(new[] { "status" }, 20);
@@ -218,6 +248,9 @@ namespace ControlHorarioBiometricAgent
             WriteJson(context, 200, payload);
         }
 
+        /// <summary>
+        /// Captura un template mediante el bridge y devuelve unicamente el resultado necesario para el backend.
+        /// </summary>
         private static void HandleEnroll(HttpListenerContext context)
         {
             var templatesPath = WriteTemplatesFile(FetchFingerprints());
@@ -257,6 +290,9 @@ namespace ControlHorarioBiometricAgent
             }
         }
 
+        /// <summary>
+        /// Descarga templates autorizados, identifica localmente y reenvia la marcacion validada al backend.
+        /// </summary>
         private static void HandleIdentifyAndMark(HttpListenerContext context)
         {
             var templates = FetchFingerprints();
@@ -309,6 +345,9 @@ namespace ControlHorarioBiometricAgent
             }
         }
 
+        /// <summary>
+        /// Obtiene por canal autenticado los templates activos requeridos para identificacion local, sin datos personales.
+        /// </summary>
         private static List<Dictionary<string, string>> FetchFingerprints()
         {
             int statusCode;
@@ -337,6 +376,9 @@ namespace ControlHorarioBiometricAgent
             return result;
         }
 
+        /// <summary>
+        /// Escribe temporalmente los templates autorizados en el formato que consume el bridge y permite su posterior limpieza.
+        /// </summary>
         private static string WriteTemplatesFile(List<Dictionary<string, string>> templates)
         {
             var path = Path.GetTempFileName();
@@ -350,6 +392,9 @@ namespace ControlHorarioBiometricAgent
             return path;
         }
 
+        /// <summary>
+        /// Reenvia una solicitud del agente al backend y conserva su codigo y cuerpo JSON.
+        /// </summary>
         private static void ForwardServerJson(HttpListenerContext context, string method, string path, string body)
         {
             int statusCode;
@@ -358,6 +403,9 @@ namespace ControlHorarioBiometricAgent
             WriteRawJson(context, response);
         }
 
+        /// <summary>
+        /// Realiza una solicitud autenticada al backend usando identidad de dispositivo y token configurados fuera del codigo.
+        /// </summary>
         private static string ServerRequest(string method, string path, string body, out int statusCode)
         {
             var request = (HttpWebRequest)WebRequest.Create(Config.ServerUrl.TrimEnd('/') + path);
@@ -399,6 +447,9 @@ namespace ControlHorarioBiometricAgent
             }
         }
 
+        /// <summary>
+        /// Ejecuta el bridge aislado con un limite de tiempo para evitar bloquear el servicio local por una captura fallida.
+        /// </summary>
         private static BridgeResult RunBridge(string[] args, int timeoutSeconds)
         {
             if (!File.Exists(Config.BridgePath))
@@ -436,6 +487,9 @@ namespace ControlHorarioBiometricAgent
             }
         }
 
+        /// <summary>
+        /// Compone argumentos seguros y entrecomillados para iniciar el bridge externo.
+        /// </summary>
         private static string BuildArguments(string[] args)
         {
             var builder = new StringBuilder();
@@ -447,12 +501,18 @@ namespace ControlHorarioBiometricAgent
             return builder.ToString();
         }
 
+        /// <summary>
+        /// Escapa un argumento para conservar su contenido al invocar el proceso bridge.
+        /// </summary>
         private static string Quote(string value)
         {
             if (value == null) return "\"\"";
             return "\"" + value.Replace("\\", "\\\\").Replace("\"", "\\\"") + "\"";
         }
 
+        /// <summary>
+        /// Convierte la salida clave=valor del bridge a un diccionario para el agente.
+        /// </summary>
         private static Dictionary<string, string> ParseBridgeOutput(string output)
         {
             var data = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -469,28 +529,43 @@ namespace ControlHorarioBiometricAgent
             return data;
         }
 
+        /// <summary>
+        /// Interpreta el indicador success devuelto por el bridge.
+        /// </summary>
         private static bool IsSuccess(Dictionary<string, string> data)
         {
             return String.Equals(GetData(data, "success"), "true", StringComparison.OrdinalIgnoreCase);
         }
 
+        /// <summary>
+        /// Interpreta como booleano un valor textual devuelto por el bridge.
+        /// </summary>
         private static bool GetBool(Dictionary<string, string> data, string key)
         {
             return String.Equals(GetData(data, key), "true", StringComparison.OrdinalIgnoreCase);
         }
 
+        /// <summary>
+        /// Obtiene un entero de configuracion sin fallar ante valores ausentes o invalidos.
+        /// </summary>
         private static int GetInt(Dictionary<string, string> data, string key, int fallback)
         {
             int parsed;
             return int.TryParse(GetData(data, key), out parsed) ? parsed : fallback;
         }
 
+        /// <summary>
+        /// Obtiene un dato del bridge sin distinguir mayusculas de minusculas.
+        /// </summary>
         private static string GetData(Dictionary<string, string> data, string key, string fallback = "")
         {
             string value;
             return data.TryGetValue(key, out value) ? value : fallback;
         }
 
+        /// <summary>
+        /// Construye o escribe una respuesta de error uniforme para agente o bridge.
+        /// </summary>
         private static Dictionary<string, object> Error(string code, string message)
         {
             return new Dictionary<string, object>
@@ -501,6 +576,9 @@ namespace ControlHorarioBiometricAgent
             };
         }
 
+        /// <summary>
+        /// Aplica CORS unicamente a los origenes configurados para que el agente no quede expuesto a sitios arbitrarios.
+        /// </summary>
         private static void AddCorsHeaders(HttpListenerContext context)
         {
             var origin = context.Request.Headers["Origin"];
@@ -514,6 +592,9 @@ namespace ControlHorarioBiometricAgent
             context.Response.Headers["Access-Control-Allow-Private-Network"] = "true";
         }
 
+        /// <summary>
+        /// Comprueba que el origen de navegador figure en la lista explicita permitida por el agente.
+        /// </summary>
         private static bool IsAllowedOrigin(string origin)
         {
             foreach (var allowed in Config.AllowedOrigins)
@@ -523,12 +604,18 @@ namespace ControlHorarioBiometricAgent
             return false;
         }
 
+        /// <summary>
+        /// Serializa y envia una respuesta JSON local con el codigo HTTP solicitado.
+        /// </summary>
         private static void WriteJson(HttpListenerContext context, int statusCode, object payload)
         {
             context.Response.StatusCode = statusCode;
             WriteRawJson(context, Json.Serialize(payload));
         }
 
+        /// <summary>
+        /// Escribe un cuerpo JSON ya preparado y cierra la respuesta HTTP.
+        /// </summary>
         private static void WriteRawJson(HttpListenerContext context, string payload)
         {
             var bytes = Encoding.UTF8.GetBytes(payload ?? "{}");
@@ -538,18 +625,27 @@ namespace ControlHorarioBiometricAgent
             context.Response.Close();
         }
 
+        /// <summary>
+        /// Convierte una ruta relativa del agente en una ruta absoluta basada en su directorio de ejecucion.
+        /// </summary>
         private static string ResolvePath(string path)
         {
             if (Path.IsPathRooted(path)) return path;
             return Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, path));
         }
 
+        /// <summary>
+        /// Elimina de forma tolerante un archivo temporal que pudo contener templates en memoria de trabajo.
+        /// </summary>
         private static void SafeDelete(string path)
         {
             try { if (File.Exists(path)) File.Delete(path); } catch { }
         }
 
 
+        /// <summary>
+        /// Registra eventos operativos del agente sin incluir tokens, credenciales ni templates biometricos.
+        /// </summary>
         private static void Log(string message)
         {
             try
@@ -565,6 +661,9 @@ namespace ControlHorarioBiometricAgent
             }
         }
 
+        /// <summary>
+        /// Rota el archivo de log cuando alcanza un megabyte para limitar su crecimiento.
+        /// </summary>
         private static void RotateLog(string path)
         {
             try

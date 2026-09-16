@@ -1,4 +1,7 @@
-$ErrorActionPreference = "Stop"
+<#
+Genera un respaldo fechado de la base MySQL indicada usando mysqldump.
+Crea el directorio backups si falta; no restaura ni elimina respaldos existentes.
+#>$ErrorActionPreference = "Stop"
 
 $database = "horarios_control"
 $user = "root"

@@ -1,8 +1,18 @@
+"""Modulo huella del sistema de control de horarios.
+
+Agrupa la logica propia necesaria para esta responsabilidad sin exponer detalles de infraestructura.
+"""
+
 from app import db
 from app.utils.datetime_utils import obtener_hora_actual
 
 
 class Huella(db.Model):
+    """
+    Representa Huella dentro del dominio de control de horarios.
+
+    Centraliza los datos y el comportamiento asociados a esta entidad o servicio.
+    """
     __tablename__ = "huellas"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -31,4 +41,10 @@ class Huella(db.Model):
     )
 
     def __repr__(self):
+        """
+        Implementa la responsabilidad de   repr   dentro de este modulo.
+
+        Returns:
+            Resultado de la operacion o respuesta HTTP correspondiente.
+        """
         return f"<Huella trabajador_id={self.trabajador_id} activa={self.activa}>"

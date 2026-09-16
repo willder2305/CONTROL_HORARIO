@@ -1,3 +1,7 @@
+/**
+ * Modulo biometriaService de la interfaz del sistema de control de horarios.
+ * Centraliza este flujo sin replicar decisiones de negocio del backend.
+ */
 import api from './api';
 import {
   enrollFingerprintWithAgent,
@@ -22,6 +26,16 @@ export async function obtenerEstadoLector() {
   return response.data;
 }
 
+/**
+
+ * Registra la huella de un trabajador usando el template capturado por el agente cuando corresponde.
+
+ *
+
+ * @returns {Promise<unknown>|JSX.Element} Resultado de la operacion o elemento renderizado.
+
+ */
+
 export async function registrarHuella(trabajadorId, fingerprintId) {
   const payload = {};
   if (fingerprintId) {
@@ -40,6 +54,16 @@ export async function registrarHuella(trabajadorId, fingerprintId) {
   );
   return response.data;
 }
+
+/**
+
+ * Solicita identificar una huella al endpoint biometrico en flujos sin agente local.
+
+ *
+
+ * @returns {Promise<unknown>|JSX.Element} Resultado de la operacion o elemento renderizado.
+
+ */
 
 export async function identificarHuella(fingerprintId) {
   const payload = {};

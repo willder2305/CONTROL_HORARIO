@@ -1,3 +1,8 @@
+"""Punto de entrada de Flask configurable para ejecucion local o servidor.
+
+Lee host, puerto y depuracion desde variables de entorno sin fijar valores de produccion en codigo.
+"""
+
 import os
 
 from app import create_app

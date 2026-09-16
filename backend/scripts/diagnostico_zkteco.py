@@ -1,3 +1,8 @@
+"""Modulo diagnostico zkteco del sistema de control de horarios.
+
+Agrupa la logica propia necesaria para esta responsabilidad sin exponer detalles de infraestructura.
+"""
+
 import argparse
 import sys
 from pathlib import Path
@@ -10,6 +15,12 @@ from app.services.fingerprint.real_provider import FingerprintDeviceError, Finge
 
 
 def main():
+    """
+    Ejecuta el diagnostico de disponibilidad del SDK y lector ZK9500 para soporte local.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     parser = argparse.ArgumentParser(description="Diagnostico local para lector ZKTeco ZK9500.")
     parser.add_argument(
         "--capturar",

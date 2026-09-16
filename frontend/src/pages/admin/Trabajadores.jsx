@@ -1,3 +1,7 @@
+/**
+ * Modulo Trabajadores de la interfaz del sistema de control de horarios.
+ * Centraliza este flujo sin replicar decisiones de negocio del backend.
+ */
 import { useEffect, useMemo, useState } from 'react';
 
 import AdminNav from '../../components/AdminNav';
@@ -18,6 +22,16 @@ const initialForm = {
   fingerprintId: '',
 };
 
+/**
+
+ * Gestiona la consulta, alta, edicion, activacion y registro biometrico de trabajadores.
+
+ *
+
+ * @returns {Promise<unknown>|JSX.Element} Resultado de la operacion o elemento renderizado.
+
+ */
+
 export default function Trabajadores() {
   const [trabajadores, setTrabajadores] = useState([]);
   const [form, setForm] = useState(initialForm);
@@ -30,6 +44,16 @@ export default function Trabajadores() {
   const isEditing = useMemo(() => Boolean(form.id), [form.id]);
   const isMockMode = readerStatus?.provider === 'mock';
   const isPhysicalReader = ['zk9500', 'local_agent'].includes(readerStatus?.provider);
+
+  /**
+
+   * Carga trabajadores con los filtros activos y muestra errores recuperables en la vista.
+
+   *
+
+   * @returns {Promise<unknown>|JSX.Element} Resultado de la operacion o elemento renderizado.
+
+   */
 
   async function loadWorkers(params = filters) {
     setLoading(true);
@@ -46,6 +70,16 @@ export default function Trabajadores() {
     }
   }
 
+  /**
+
+   * Actualiza el estado del lector para distinguir captura local de modo de desarrollo.
+
+   *
+
+   * @returns {Promise<unknown>|JSX.Element} Resultado de la operacion o elemento renderizado.
+
+   */
+
   async function loadReaderStatus() {
     try {
       const response = await obtenerEstadoLector();
@@ -60,6 +94,16 @@ export default function Trabajadores() {
     loadReaderStatus();
   }, []);
 
+  /**
+
+   * Sincroniza el campo editado con el formulario de trabajador.
+
+   *
+
+   * @returns {Promise<unknown>|JSX.Element} Resultado de la operacion o elemento renderizado.
+
+   */
+
   function handleFormChange(event) {
     setForm((current) => ({
       ...current,
@@ -67,12 +111,32 @@ export default function Trabajadores() {
     }));
   }
 
+  /**
+
+   * Sincroniza el campo editado con los filtros de busqueda.
+
+   *
+
+   * @returns {Promise<unknown>|JSX.Element} Resultado de la operacion o elemento renderizado.
+
+   */
+
   function handleFilterChange(event) {
     setFilters((current) => ({
       ...current,
       [event.target.name]: event.target.value,
     }));
   }
+
+  /**
+
+   * Crea o actualiza el trabajador y coordina el enrolamiento requerido por el provider activo.
+
+   *
+
+   * @returns {Promise<unknown>|JSX.Element} Resultado de la operacion o elemento renderizado.
+
+   */
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -117,6 +181,16 @@ export default function Trabajadores() {
     }
   }
 
+  /**
+
+   * Carga los datos del trabajador seleccionado para su edicion.
+
+   *
+
+   * @returns {Promise<unknown>|JSX.Element} Resultado de la operacion o elemento renderizado.
+
+   */
+
   function editWorker(worker) {
     setForm({
       id: worker.id,
@@ -128,6 +202,16 @@ export default function Trabajadores() {
     setMessage('');
     setError('');
   }
+
+  /**
+
+   * Activa o desactiva el trabajador seleccionado y recarga la lista.
+
+   *
+
+   * @returns {Promise<unknown>|JSX.Element} Resultado de la operacion o elemento renderizado.
+
+   */
 
   async function toggleWorker(worker) {
     setError('');
@@ -142,6 +226,16 @@ export default function Trabajadores() {
       setError(requestError.response?.data?.message ?? 'No se pudo cambiar el estado.');
     }
   }
+
+  /**
+
+   * Captura y registra una nueva huella para el trabajador seleccionado.
+
+   *
+
+   * @returns {Promise<unknown>|JSX.Element} Resultado de la operacion o elemento renderizado.
+
+   */
 
   async function registerFingerprint(worker) {
     const fingerprintId = isMockMode
@@ -173,10 +267,30 @@ export default function Trabajadores() {
     }
   }
 
+  /**
+
+   * Ejecuta la consulta de trabajadores con los filtros seleccionados.
+
+   *
+
+   * @returns {Promise<unknown>|JSX.Element} Resultado de la operacion o elemento renderizado.
+
+   */
+
   async function applyFilters(event) {
     event.preventDefault();
     await loadWorkers(filters);
   }
+
+  /**
+
+   * Limpia los filtros y recupera el listado completo.
+
+   *
+
+   * @returns {Promise<unknown>|JSX.Element} Resultado de la operacion o elemento renderizado.
+
+   */
 
   async function clearFilters() {
     const emptyFilters = { q: '', estado: '' };

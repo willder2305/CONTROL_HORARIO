@@ -1,3 +1,8 @@
+"""Modulo datetime utils del sistema de control de horarios.
+
+Agrupa la logica propia necesaria para esta responsabilidad sin exponer detalles de infraestructura.
+"""
+
 from datetime import datetime
 from zoneinfo import ZoneInfo
 

@@ -1,3 +1,8 @@
+"""Modulo real provider del sistema de control de horarios.
+
+Agrupa la logica propia necesaria para esta responsabilidad sin exponer detalles de infraestructura.
+"""
+
 import logging
 import base64
 import subprocess
@@ -12,14 +17,29 @@ from app.services.fingerprint.base import FingerprintProvider
 
 
 class FingerprintDeviceError(RuntimeError):
+    """
+    Representa FingerprintDeviceError dentro del dominio de control de horarios.
+
+    Centraliza los datos y el comportamiento asociados a esta entidad o servicio.
+    """
     pass
 
 
 class FingerprintDuplicateError(RuntimeError):
+    """
+    Representa FingerprintDuplicateError dentro del dominio de control de horarios.
+
+    Centraliza los datos y el comportamiento asociados a esta entidad o servicio.
+    """
     pass
 
 
 class RealFingerprintProvider(FingerprintProvider):
+    """
+    Representa RealFingerprintProvider dentro del dominio de control de horarios.
+
+    Centraliza los datos y el comportamiento asociados a esta entidad o servicio.
+    """
     provider_name = "zk9500"
     version = "ZKFinger Standard SDK 5.3.0.33"
 
@@ -31,6 +51,19 @@ class RealFingerprintProvider(FingerprintProvider):
         enroll_samples=None,
         match_threshold=None,
     ):
+        """
+        Implementa la responsabilidad de   init   dentro de este modulo.
+
+        Args:
+            sdk_factory: Dato utilizado por la operacion.
+            device_index: Dato utilizado por la operacion.
+            capture_timeout_seconds: Dato utilizado por la operacion.
+            enroll_samples: Dato utilizado por la operacion.
+            match_threshold: Dato utilizado por la operacion.
+
+        Returns:
+            Resultado de la operacion o respuesta HTTP correspondiente.
+        """
         self.sdk_factory = sdk_factory
         self.device_index = self._config_int("ZKTECO_DEVICE_INDEX", 0, device_index)
         self.capture_timeout_seconds = self._config_int(
@@ -127,6 +160,12 @@ class RealFingerprintProvider(FingerprintProvider):
             self._terminate_device(device)
 
     def status(self):
+        """
+        Describe la disponibilidad del provider, SDK y dispositivo sin exponer templates biometricos.
+
+        Returns:
+            Resultado de la operacion o respuesta HTTP correspondiente.
+        """
         if self._should_use_bridge():
             return self._bridge_status()
 
@@ -165,9 +204,21 @@ class RealFingerprintProvider(FingerprintProvider):
             self._terminate_device(device)
 
     def _should_use_bridge(self):
+        """
+        Implementa la responsabilidad de  should use bridge dentro de este modulo.
+
+        Returns:
+            Resultado de la operacion o respuesta HTTP correspondiente.
+        """
         return self.sdk_factory is None and self.bridge_path.exists()
 
     def _bridge_status(self):
+        """
+        Implementa la responsabilidad de  bridge status dentro de este modulo.
+
+        Returns:
+            Resultado de la operacion o respuesta HTTP correspondiente.
+        """
         result = self._run_bridge(["status"], timeout=20)
         data = self._parse_bridge_output(result.stdout)
         return {
@@ -184,6 +235,15 @@ class RealFingerprintProvider(FingerprintProvider):
         }
 
     def _bridge_enroll(self, active_fingerprints):
+        """
+        Implementa la responsabilidad de  bridge enroll dentro de este modulo.
+
+        Args:
+            active_fingerprints: Dato utilizado por la operacion.
+
+        Returns:
+            Resultado de la operacion o respuesta HTTP correspondiente.
+        """
         with self._template_file(active_fingerprints) as templates_path:
             result = self._run_bridge(
                 [
@@ -203,6 +263,15 @@ class RealFingerprintProvider(FingerprintProvider):
         return base64.b64decode(template)
 
     def _bridge_identify(self, active_fingerprints):
+        """
+        Implementa la responsabilidad de  bridge identify dentro de este modulo.
+
+        Args:
+            active_fingerprints: Dato utilizado por la operacion.
+
+        Returns:
+            Resultado de la operacion o respuesta HTTP correspondiente.
+        """
         with self._template_file(active_fingerprints) as templates_path:
             result = self._run_bridge(
                 [
@@ -225,6 +294,16 @@ class RealFingerprintProvider(FingerprintProvider):
         return None
 
     def _run_bridge(self, args, timeout):
+        """
+        Implementa la responsabilidad de  run bridge dentro de este modulo.
+
+        Args:
+            args: Dato utilizado por la operacion.
+            timeout: Dato utilizado por la operacion.
+
+        Returns:
+            Resultado de la operacion o respuesta HTTP correspondiente.
+        """
         completed = subprocess.run(
             [str(self.bridge_path), *args],
             capture_output=True,
@@ -238,6 +317,16 @@ class RealFingerprintProvider(FingerprintProvider):
         return completed
 
     def _raise_for_bridge_error(self, data, result):
+        """
+        Implementa la responsabilidad de  raise for bridge error dentro de este modulo.
+
+        Args:
+            data: Dato utilizado por la operacion.
+            result: Dato utilizado por la operacion.
+
+        Returns:
+            Resultado de la operacion o respuesta HTTP correspondiente.
+        """
         if result.returncode == 0 and data.get("success", "true") != "false":
             return
         code = data.get("code")
@@ -247,6 +336,15 @@ class RealFingerprintProvider(FingerprintProvider):
         raise FingerprintDeviceError(message)
 
     def _parse_bridge_output(self, output):
+        """
+        Implementa la responsabilidad de  parse bridge output dentro de este modulo.
+
+        Args:
+            output: Dato utilizado por la operacion.
+
+        Returns:
+            Resultado de la operacion o respuesta HTTP correspondiente.
+        """
         data = {}
         for line in (output or "").splitlines():
             if "=" in line:
@@ -256,6 +354,15 @@ class RealFingerprintProvider(FingerprintProvider):
 
     @contextmanager
     def _template_file(self, fingerprints):
+        """
+        Implementa la responsabilidad de  template file dentro de este modulo.
+
+        Args:
+            fingerprints: Dato utilizado por la operacion.
+
+        Returns:
+            Resultado de la operacion o respuesta HTTP correspondiente.
+        """
         temp_file = tempfile.NamedTemporaryFile("w", delete=False, encoding="utf-8")
         try:
             for fingerprint in fingerprints:
@@ -270,6 +377,17 @@ class RealFingerprintProvider(FingerprintProvider):
                 pass
 
     def _config_int(self, key, default, explicit_value):
+        """
+        Implementa la responsabilidad de  config int dentro de este modulo.
+
+        Args:
+            key: Dato utilizado por la operacion.
+            default: Dato utilizado por la operacion.
+            explicit_value: Dato utilizado por la operacion.
+
+        Returns:
+            Resultado de la operacion o respuesta HTTP correspondiente.
+        """
         if explicit_value is not None:
             return int(explicit_value)
         if has_app_context():
@@ -277,6 +395,12 @@ class RealFingerprintProvider(FingerprintProvider):
         return default
 
     def _load_sdk_factory(self):
+        """
+        Implementa la responsabilidad de  load sdk factory dentro de este modulo.
+
+        Returns:
+            Resultado de la operacion o respuesta HTTP correspondiente.
+        """
         if self.sdk_factory:
             return self.sdk_factory
         try:
@@ -289,6 +413,12 @@ class RealFingerprintProvider(FingerprintProvider):
         return ZKFP2
 
     def _open_device(self):
+        """
+        Implementa la responsabilidad de  open device dentro de este modulo.
+
+        Returns:
+            Resultado de la operacion o respuesta HTTP correspondiente.
+        """
         self._log("Provider: zk9500")
         self._log("Inicializando ZKFinger SDK 5.3.0.33")
         sdk_class = self._load_sdk_factory()
@@ -323,6 +453,15 @@ class RealFingerprintProvider(FingerprintProvider):
         return device
 
     def _capture_enrollment_templates(self, device):
+        """
+        Implementa la responsabilidad de  capture enrollment templates dentro de este modulo.
+
+        Args:
+            device: Dato utilizado por la operacion.
+
+        Returns:
+            Resultado de la operacion o respuesta HTTP correspondiente.
+        """
         templates = []
         while len(templates) < self.enroll_samples:
             template = self._capture_template(device)
@@ -335,6 +474,15 @@ class RealFingerprintProvider(FingerprintProvider):
         return templates
 
     def _capture_template(self, device):
+        """
+        Implementa la responsabilidad de  capture template dentro de este modulo.
+
+        Args:
+            device: Dato utilizado por la operacion.
+
+        Returns:
+            Resultado de la operacion o respuesta HTTP correspondiente.
+        """
         deadline = monotonic() + self.capture_timeout_seconds
         while monotonic() < deadline:
             capture = self._call(device, "AcquireFingerprint")
@@ -348,6 +496,15 @@ class RealFingerprintProvider(FingerprintProvider):
         raise FingerprintDeviceError("Tiempo agotado esperando huella en el lector ZK9500.")
 
     def _wait_for_finger_release(self, device):
+        """
+        Implementa la responsabilidad de  wait for finger release dentro de este modulo.
+
+        Args:
+            device: Dato utilizado por la operacion.
+
+        Returns:
+            Resultado de la operacion o respuesta HTTP correspondiente.
+        """
         deadline = monotonic() + self.release_timeout_seconds
         while monotonic() < deadline:
             capture = self._call(device, "AcquireFingerprint")
@@ -357,6 +514,16 @@ class RealFingerprintProvider(FingerprintProvider):
         raise FingerprintDeviceError("Retire el dedo del lector antes de continuar con la siguiente captura.")
 
     def _validate_same_finger(self, device, templates):
+        """
+        Implementa la responsabilidad de  validate same finger dentro de este modulo.
+
+        Args:
+            device: Dato utilizado por la operacion.
+            templates: Dato utilizado por la operacion.
+
+        Returns:
+            Resultado de la operacion o respuesta HTTP correspondiente.
+        """
         if len(templates) < 2:
             return
         reference = templates[0]
@@ -367,6 +534,16 @@ class RealFingerprintProvider(FingerprintProvider):
                 )
 
     def _merge_templates(self, device, templates):
+        """
+        Implementa la responsabilidad de  merge templates dentro de este modulo.
+
+        Args:
+            device: Dato utilizado por la operacion.
+            templates: Dato utilizado por la operacion.
+
+        Returns:
+            Resultado de la operacion o respuesta HTTP correspondiente.
+        """
         if len(templates) < 3:
             raise FingerprintDeviceError("ZKFinger requiere tres muestras para registrar una huella.")
 
@@ -381,6 +558,17 @@ class RealFingerprintProvider(FingerprintProvider):
         return bytes(merged_template)
 
     def _identify_with_database(self, device, captured_template, fingerprints):
+        """
+        Implementa la responsabilidad de  identify with database dentro de este modulo.
+
+        Args:
+            device: Dato utilizado por la operacion.
+            captured_template: Dato utilizado por la operacion.
+            fingerprints: Dato utilizado por la operacion.
+
+        Returns:
+            Resultado de la operacion o respuesta HTTP correspondiente.
+        """
         fingerprints_by_id = self._load_fingerprints_into_database(device, fingerprints)
         identified = self._call(device, "DBIdentify", captured_template)
         finger_id = None
@@ -398,6 +586,16 @@ class RealFingerprintProvider(FingerprintProvider):
         return self._identify_by_matching(device, captured_template, fingerprints)
 
     def _load_fingerprints_into_database(self, device, fingerprints):
+        """
+        Implementa la responsabilidad de  load fingerprints into database dentro de este modulo.
+
+        Args:
+            device: Dato utilizado por la operacion.
+            fingerprints: Dato utilizado por la operacion.
+
+        Returns:
+            Resultado de la operacion o respuesta HTTP correspondiente.
+        """
         self._call_if_exists(device, "DBClear")
         fingerprints_by_id = {}
         for fingerprint in fingerprints:
@@ -408,6 +606,16 @@ class RealFingerprintProvider(FingerprintProvider):
         return fingerprints_by_id
 
     def _identify_loaded_template(self, device, template):
+        """
+        Implementa la responsabilidad de  identify loaded template dentro de este modulo.
+
+        Args:
+            device: Dato utilizado por la operacion.
+            template: Dato utilizado por la operacion.
+
+        Returns:
+            Resultado de la operacion o respuesta HTTP correspondiente.
+        """
         identified = self._call(device, "DBIdentify", template)
         if isinstance(identified, tuple):
             finger_id = identified[0]
@@ -418,6 +626,17 @@ class RealFingerprintProvider(FingerprintProvider):
         return None
 
     def _identify_by_matching(self, device, captured_template, fingerprints):
+        """
+        Implementa la responsabilidad de  identify by matching dentro de este modulo.
+
+        Args:
+            device: Dato utilizado por la operacion.
+            captured_template: Dato utilizado por la operacion.
+            fingerprints: Dato utilizado por la operacion.
+
+        Returns:
+            Resultado de la operacion o respuesta HTTP correspondiente.
+        """
         best_fingerprint = None
         best_score = -1
         for fingerprint in fingerprints:
@@ -430,12 +649,32 @@ class RealFingerprintProvider(FingerprintProvider):
         return None
 
     def _match(self, device, template_a, template_b):
+        """
+        Implementa la responsabilidad de  match dentro de este modulo.
+
+        Args:
+            device: Dato utilizado por la operacion.
+            template_a: Dato utilizado por la operacion.
+            template_b: Dato utilizado por la operacion.
+
+        Returns:
+            Resultado de la operacion o respuesta HTTP correspondiente.
+        """
         result = self._call(device, "DBMatch", template_a, template_b)
         if isinstance(result, bool):
             return 1 if result else 0
         return int(result or 0)
 
     def _terminate_device(self, device):
+        """
+        Implementa la responsabilidad de  terminate device dentro de este modulo.
+
+        Args:
+            device: Dato utilizado por la operacion.
+
+        Returns:
+            Resultado de la operacion o respuesta HTTP correspondiente.
+        """
         if not device:
             return
         for method_name in ("DBFree", "CloseDevice", "Terminate"):
@@ -445,18 +684,47 @@ class RealFingerprintProvider(FingerprintProvider):
                 continue
 
     def _call(self, device, method_name, *args):
+        """
+        Implementa la responsabilidad de  call dentro de este modulo.
+
+        Args:
+            device: Dato utilizado por la operacion.
+            method_name: Dato utilizado por la operacion.
+
+        Returns:
+            Resultado de la operacion o respuesta HTTP correspondiente.
+        """
         method = getattr(device, method_name, None)
         if not method:
             raise FingerprintDeviceError(f"El SDK no expone {method_name}.")
         return method(*args)
 
     def _call_if_exists(self, device, method_name, *args):
+        """
+        Implementa la responsabilidad de  call if exists dentro de este modulo.
+
+        Args:
+            device: Dato utilizado por la operacion.
+            method_name: Dato utilizado por la operacion.
+
+        Returns:
+            Resultado de la operacion o respuesta HTTP correspondiente.
+        """
         method = getattr(device, method_name, None)
         if method:
             return method(*args)
         return None
 
     def _log(self, message):
+        """
+        Implementa la responsabilidad de  log dentro de este modulo.
+
+        Args:
+            message: Dato utilizado por la operacion.
+
+        Returns:
+            Resultado de la operacion o respuesta HTTP correspondiente.
+        """
         self.logger.info("[BIOMETRIC] %s", message)
         print(f"[BIOMETRIC] {message}", flush=True)
 

@@ -1,3 +1,7 @@
+/**
+ * Modulo de interfaz Reportes del sistema de control de horarios.
+ * Mantiene la responsabilidad indicada sin duplicar logica de dominio del backend.
+ */
 import { useEffect, useState } from 'react';
 
 import AdminNav from '../../components/AdminNav';
@@ -40,6 +44,11 @@ const summaryLabels = [
   ['trabajadores_incluidos', 'Trabajadores'],
 ];
 
+/**
+ * Presenta resultados de asistencia y permite exportarlos respetando los filtros activos. Reportes.jsx.
+ *
+ * @returns {JSX.Element|Promise<unknown>|unknown} Resultado de la operacion o elemento renderizado.
+ */
 export default function Reportes() {
   const [filters, setFilters] = useState(initialFilters);
   const [workers, setWorkers] = useState([]);
@@ -48,6 +57,11 @@ export default function Reportes() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
 
+  /**
+   * Carga los datos requeridos por la vista y refleja errores recuperables en la interfaz.
+   *
+   * @returns {JSX.Element|Promise<unknown>|unknown} Resultado de la operacion o elemento renderizado.
+   */
   async function loadReport(params = filters) {
     setLoading(true);
     setError('');
@@ -70,6 +84,11 @@ export default function Reportes() {
     loadReport();
   }, []);
 
+  /**
+   * Gestiona la interaccion del usuario y actualiza el estado de esta pantalla de forma controlada.
+   *
+   * @returns {JSX.Element|Promise<unknown>|unknown} Resultado de la operacion o elemento renderizado.
+   */
   function handleChange(event) {
     setFilters((current) => ({
       ...current,
@@ -77,16 +96,31 @@ export default function Reportes() {
     }));
   }
 
+  /**
+   * Envía los filtros seleccionados y recarga jornada y detalle de marcaciones. Reportes.jsx.
+   *
+   * @returns {JSX.Element|Promise<unknown>|unknown} Resultado de la operacion o elemento renderizado.
+   */
   async function applyFilters(event) {
     event.preventDefault();
     await loadReport(filters);
   }
 
+  /**
+   * Restablece todos los filtros y recupera la consulta general. Reportes.jsx.
+   *
+   * @returns {JSX.Element|Promise<unknown>|unknown} Resultado de la operacion o elemento renderizado.
+   */
   async function clearFilters() {
     setFilters(initialFilters);
     await loadReport(initialFilters);
   }
 
+  /**
+   * Solicita la generacion o descarga del reporte respetando los filtros activos.
+   *
+   * @returns {JSX.Element|Promise<unknown>|unknown} Resultado de la operacion o elemento renderizado.
+   */
   async function downloadExcel() {
     setError('');
     try {
@@ -104,6 +138,11 @@ export default function Reportes() {
     }
   }
 
+  /**
+   * Solicita la generacion o descarga del reporte respetando los filtros activos.
+   *
+   * @returns {JSX.Element|Promise<unknown>|unknown} Resultado de la operacion o elemento renderizado.
+   */
   async function downloadPdf() {
     setError('');
     try {

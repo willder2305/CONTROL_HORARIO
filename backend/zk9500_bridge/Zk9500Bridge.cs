@@ -6,12 +6,18 @@ using libzkfpcsharp;
 
 namespace HorariosControl.Zk9500Bridge
 {
+    /// <summary>
+    /// Representa un template autorizado con el identificador que DBIdentify devolvera al agente.
+    /// </summary>
     internal class TemplateRecord
     {
         public int Id;
         public byte[] Template;
     }
 
+    /// <summary>
+    /// Agrupa el proceso que expone el agente local o ejecuta el bridge de integracion con ZKFinger.
+    /// </summary>
     internal class Program
     {
         private const int TemplateSize = 2048;
@@ -21,6 +27,9 @@ namespace HorariosControl.Zk9500Bridge
         private static IntPtr databaseHandle = IntPtr.Zero;
         private static byte[] imageBuffer;
 
+        /// <summary>
+        /// Inicializa el proceso del agente o bridge, procesa el comando solicitado y garantiza la liberacion de recursos nativos.
+        /// </summary>
         [STAThread]
         private static int Main(string[] args)
         {
@@ -58,6 +67,9 @@ namespace HorariosControl.Zk9500Bridge
             }
         }
 
+        /// <summary>
+        /// Inicializa el SDK temporalmente, detecta el lector y publica sus capacidades sin capturar huellas.
+        /// </summary>
         private static int Status()
         {
             Console.WriteLine("provider=zk9500");
@@ -91,6 +103,9 @@ namespace HorariosControl.Zk9500Bridge
             return 0;
         }
 
+        /// <summary>
+        /// Captura tres muestras, rechaza duplicados y fusiona las muestras con DBMerge para crear un template ZKFinger.
+        /// </summary>
         private static int Enroll(string templatesPath, int timeoutSeconds)
         {
             OpenDevice(0, true);
@@ -137,6 +152,9 @@ namespace HorariosControl.Zk9500Bridge
             return 0;
         }
 
+        /// <summary>
+        /// Carga templates activos en la base temporal del SDK y encuentra una coincidencia mediante DBIdentify.
+        /// </summary>
         private static int Identify(string templatesPath, int timeoutSeconds)
         {
             OpenDevice(0, true);
@@ -157,6 +175,9 @@ namespace HorariosControl.Zk9500Bridge
             return 6;
         }
 
+        /// <summary>
+        /// Inicializa ZKFinger, abre el dispositivo indicado y prepara la base biometrica y el buffer de imagen.
+        /// </summary>
         private static void OpenDevice(int index, bool initializeSdk)
         {
             Console.Error.WriteLine("[BIOMETRIC] Provider: zk9500");
@@ -198,6 +219,9 @@ namespace HorariosControl.Zk9500Bridge
             Console.Error.WriteLine("[BIOMETRIC] ZK9500 listo");
         }
 
+        /// <summary>
+        /// Lee un parametro entero del lector, como ancho o alto de imagen, mediante ZKFinger.
+        /// </summary>
         private static int GetParameterInt(int parameter)
         {
             byte[] value = new byte[4];
@@ -208,6 +232,9 @@ namespace HorariosControl.Zk9500Bridge
             return result;
         }
 
+        /// <summary>
+        /// Espera una captura valida del lector hasta el timeout configurado.
+        /// </summary>
         private static byte[] CaptureTemplate(int timeoutSeconds)
         {
             DateTime deadline = DateTime.UtcNow.AddSeconds(timeoutSeconds);
@@ -227,6 +254,9 @@ namespace HorariosControl.Zk9500Bridge
             throw new TimeoutException("Tiempo de espera agotado. No se detecto ninguna huella.");
         }
 
+        /// <summary>
+        /// Espera que el usuario retire el dedo entre muestras para evitar capturas duplicadas.
+        /// </summary>
         private static void WaitForFingerRelease(int timeoutSeconds)
         {
             DateTime deadline = DateTime.UtcNow.AddSeconds(timeoutSeconds);
@@ -244,6 +274,9 @@ namespace HorariosControl.Zk9500Bridge
             throw new TimeoutException("Retire el dedo del lector antes de continuar con la siguiente captura.");
         }
 
+        /// <summary>
+        /// Carga los templates autorizados en la base temporal del SDK para DBIdentify y deteccion de duplicados.
+        /// </summary>
         private static void LoadTemplates(string templatesPath)
         {
             foreach (TemplateRecord record in ReadTemplates(templatesPath))
@@ -256,6 +289,9 @@ namespace HorariosControl.Zk9500Bridge
             }
         }
 
+        /// <summary>
+        /// Lee los templates autorizados del archivo temporal y los convierte para DBAdd.
+        /// </summary>
         private static List<TemplateRecord> ReadTemplates(string templatesPath)
         {
             List<TemplateRecord> records = new List<TemplateRecord>();
@@ -285,6 +321,9 @@ namespace HorariosControl.Zk9500Bridge
             return records;
         }
 
+        /// <summary>
+        /// Ejecuta DBIdentify sobre la base temporal y valida que el puntaje indique una coincidencia util.
+        /// </summary>
         private static bool IdentifyLoaded(byte[] template, out int id, out int score)
         {
             id = 0;
@@ -293,6 +332,9 @@ namespace HorariosControl.Zk9500Bridge
             return ret == zkfperrdef.ZKFP_ERR_OK && id > 0 && score > 0;
         }
 
+        /// <summary>
+        /// Libera la base biometrica y el identificador del lector para no dejar el dispositivo bloqueado.
+        /// </summary>
         private static void CloseDevice()
         {
             if (databaseHandle != IntPtr.Zero)
@@ -307,6 +349,9 @@ namespace HorariosControl.Zk9500Bridge
             }
         }
 
+        /// <summary>
+        /// Extrae el valor de un argumento con nombre de la linea de comandos del bridge.
+        /// </summary>
         private static string GetStringArg(string[] args, string name, string fallback)
         {
             for (int i = 0; i < args.Length - 1; i++)
@@ -319,6 +364,9 @@ namespace HorariosControl.Zk9500Bridge
             return fallback;
         }
 
+        /// <summary>
+        /// Extrae y valida un argumento entero de la linea de comandos del bridge.
+        /// </summary>
         private static int GetIntArg(string[] args, string name, int fallback)
         {
             string value = GetStringArg(args, name, null);
@@ -326,6 +374,9 @@ namespace HorariosControl.Zk9500Bridge
             return Int32.TryParse(value, out result) ? result : fallback;
         }
 
+        /// <summary>
+        /// Construye o escribe una respuesta de error uniforme para agente o bridge.
+        /// </summary>
         private static void Error(string code, string message)
         {
             Console.WriteLine("success=false");

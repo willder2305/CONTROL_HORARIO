@@ -1,3 +1,7 @@
+/**
+ * Modulo de interfaz Configuracion del sistema de control de horarios.
+ * Mantiene la responsabilidad indicada sin duplicar logica de dominio del backend.
+ */
 import AdminNav from '../../components/AdminNav';
 
 export default function Configuracion() {

@@ -1,3 +1,7 @@
+"""Servidor WSGI para despliegue con Waitress.
+
+Lee host, puerto e hilos desde el entorno y sirve la aplicacion Flask ya configurada.
+"""
 import os
 
 from waitress import serve

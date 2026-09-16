@@ -1,3 +1,7 @@
+/**
+ * Modulo de interfaz AdminNav del sistema de control de horarios.
+ * Mantiene la responsabilidad indicada sin duplicar logica de dominio del backend.
+ */
 import { NavLink, useNavigate } from 'react-router-dom';
 
 import { logout } from '../services/authService';
@@ -11,6 +15,11 @@ const adminLinks = [
   ['Configuración', '/admin/configuracion'],
 ];
 
+/**
+ * Renderiza la navegacion del panel administrativo y ofrece cierre de sesion para escritorio y movil. AdminNav.jsx.
+ *
+ * @returns {JSX.Element|Promise<unknown>|unknown} Resultado de la operacion o elemento renderizado.
+ */
 export default function AdminNav() {
   const navigate = useNavigate();
 
@@ -19,6 +28,11 @@ export default function AdminNav() {
     navigate('/admin/login', { replace: true });
   }
 
+  /**
+   * Genera los enlaces de administracion manteniendo marcado el destino activo. AdminNav.jsx.
+   *
+   * @returns {JSX.Element|Promise<unknown>|unknown} Resultado de la operacion o elemento renderizado.
+   */
   function renderLinks() {
     return adminLinks.map(([label, path]) => (
       <NavLink

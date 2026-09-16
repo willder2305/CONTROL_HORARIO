@@ -1,3 +1,8 @@
+"""Modulo horarios del sistema de control de horarios.
+
+Agrupa la logica propia necesaria para esta responsabilidad sin exponer detalles de infraestructura.
+"""
+
 from flask import Blueprint, jsonify, request
 
 from app import db
@@ -15,6 +20,18 @@ horarios_bp = Blueprint("horarios", __name__)
 
 
 def audit(action, entity, entity_id, description):
+    """
+    Atiende el endpoint Flask asociado a audit y devuelve una respuesta JSON acorde al resultado de la operacion.
+
+    Args:
+        action: Dato utilizado por la operacion.
+        entity: Dato utilizado por la operacion.
+        entity_id: Dato utilizado por la operacion.
+        description: Dato utilizado por la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     admin = current_admin()
     db.session.add(
         Auditoria(
@@ -31,6 +48,12 @@ def audit(action, entity, entity_id, description):
 @horarios_bp.get("/plantillas")
 @require_admin
 def list_templates():
+    """
+    Atiende el endpoint Flask asociado a list_templates y devuelve una respuesta JSON acorde al resultado de la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     templates = PlantillaHorario.query.order_by(
         PlantillaHorario.activo.desc(),
         PlantillaHorario.nombre.asc(),
@@ -43,6 +66,12 @@ def list_templates():
 @horarios_bp.post("/plantillas")
 @require_admin
 def create_template():
+    """
+    Atiende el endpoint Flask asociado a create_template y devuelve una respuesta JSON acorde al resultado de la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     data = request.get_json(silent=True) or {}
     payload, errors = build_template_payload(data)
     if errors:
@@ -80,6 +109,15 @@ def create_template():
 @horarios_bp.put("/plantillas/<int:template_id>")
 @require_admin
 def update_template(template_id):
+    """
+    Atiende el endpoint Flask asociado a update_template y devuelve una respuesta JSON acorde al resultado de la operacion.
+
+    Args:
+        template_id: Dato utilizado por la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     template = PlantillaHorario.query.get_or_404(template_id)
     data = request.get_json(silent=True) or {}
     payload, errors = build_template_payload(data)
@@ -118,6 +156,15 @@ def update_template(template_id):
 @horarios_bp.patch("/plantillas/<int:template_id>/desactivar")
 @require_admin
 def deactivate_template(template_id):
+    """
+    Atiende el endpoint Flask asociado a deactivate_template y devuelve una respuesta JSON acorde al resultado de la operacion.
+
+    Args:
+        template_id: Dato utilizado por la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     template = PlantillaHorario.query.get_or_404(template_id)
     template.activo = False
     audit("DESACTIVAR_PLANTILLA_HORARIO", "plantillas_horario", template.id, template.nombre)
@@ -134,6 +181,15 @@ def deactivate_template(template_id):
 @horarios_bp.post("/trabajadores/<int:worker_id>/asignar")
 @require_admin
 def assign_schedule(worker_id):
+    """
+    Atiende el endpoint Flask asociado a assign_schedule y devuelve una respuesta JSON acorde al resultado de la operacion.
+
+    Args:
+        worker_id: Dato utilizado por la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     worker = Trabajador.query.get_or_404(worker_id)
     data = request.get_json(silent=True) or {}
     payload, errors = schedule_payload_from_assignment(data)
@@ -169,6 +225,15 @@ def assign_schedule(worker_id):
 @horarios_bp.get("/trabajadores/<int:worker_id>/actual")
 @require_admin
 def current_worker_schedule(worker_id):
+    """
+    Atiende el endpoint Flask asociado a current_worker_schedule y devuelve una respuesta JSON acorde al resultado de la operacion.
+
+    Args:
+        worker_id: Dato utilizado por la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     Trabajador.query.get_or_404(worker_id)
     schedule = (
         HorarioTrabajador.query.filter_by(trabajador_id=worker_id, activo=True)
@@ -186,6 +251,15 @@ def current_worker_schedule(worker_id):
 @horarios_bp.get("/trabajadores/<int:worker_id>/historial")
 @require_admin
 def worker_schedule_history(worker_id):
+    """
+    Atiende el endpoint Flask asociado a worker_schedule_history y devuelve una respuesta JSON acorde al resultado de la operacion.
+
+    Args:
+        worker_id: Dato utilizado por la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     Trabajador.query.get_or_404(worker_id)
     schedules = (
         HorarioTrabajador.query.filter_by(trabajador_id=worker_id)

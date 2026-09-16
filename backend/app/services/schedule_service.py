@@ -1,3 +1,8 @@
+"""Modulo schedule service del sistema de control de horarios.
+
+Agrupa la logica propia necesaria para esta responsabilidad sin exponer detalles de infraestructura.
+"""
+
 from datetime import datetime, timedelta
 
 from app import db
@@ -5,6 +10,17 @@ from app.models import HorarioTrabajador, PlantillaHorario
 
 
 def parse_time(value, field_name, errors):
+    """
+    Valida y transforma datos externos al tipo de dominio esperado, informando errores de formato cuando corresponde.
+
+    Args:
+        value: Dato utilizado por la operacion.
+        field_name: Dato utilizado por la operacion.
+        errors: Dato utilizado por la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     if not value:
         errors[field_name] = "Campo obligatorio."
         return None
@@ -16,12 +32,34 @@ def parse_time(value, field_name, errors):
 
 
 def parse_optional_time(value, field_name, errors):
+    """
+    Valida y transforma datos externos al tipo de dominio esperado, informando errores de formato cuando corresponde.
+
+    Args:
+        value: Dato utilizado por la operacion.
+        field_name: Dato utilizado por la operacion.
+        errors: Dato utilizado por la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     if not value:
         return None
     return parse_time(value, field_name, errors)
 
 
 def parse_date(value, field_name, errors):
+    """
+    Valida y transforma datos externos al tipo de dominio esperado, informando errores de formato cuando corresponde.
+
+    Args:
+        value: Dato utilizado por la operacion.
+        field_name: Dato utilizado por la operacion.
+        errors: Dato utilizado por la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     if not value:
         errors[field_name] = "Campo obligatorio."
         return None
@@ -33,14 +71,41 @@ def parse_date(value, field_name, errors):
 
 
 def serialize_time(value):
+    """
+    Convierte una entidad de dominio a una estructura segura y serializable para respuestas de la API.
+
+    Args:
+        value: Dato utilizado por la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     return value.strftime("%H:%M") if value else None
 
 
 def serialize_date(value):
+    """
+    Convierte una entidad de dominio a una estructura segura y serializable para respuestas de la API.
+
+    Args:
+        value: Dato utilizado por la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     return value.isoformat() if value else None
 
 
 def serialize_template(template):
+    """
+    Convierte una entidad de dominio a una estructura segura y serializable para respuestas de la API.
+
+    Args:
+        template: Dato utilizado por la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     return {
         "id": template.id,
         "nombre": template.nombre,
@@ -55,6 +120,15 @@ def serialize_template(template):
 
 
 def serialize_worker_schedule(schedule):
+    """
+    Convierte una entidad de dominio a una estructura segura y serializable para respuestas de la API.
+
+    Args:
+        schedule: Dato utilizado por la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     template_name = schedule.plantilla.nombre if schedule.plantilla else None
     return {
         "id": schedule.id,
@@ -118,6 +192,15 @@ def build_template_payload(data):
 
 
 def schedule_payload_from_assignment(data):
+    """
+    Implementa la responsabilidad de schedule payload from assignment dentro de este modulo.
+
+    Args:
+        data: Dato utilizado por la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     errors = {}
     plantilla_id = data.get("plantilla_id") or None
     template = None
@@ -173,6 +256,16 @@ def schedule_payload_from_assignment(data):
 
 
 def close_previous_active_schedule(trabajador_id, fecha_inicio):
+    """
+    Implementa la responsabilidad de close previous active schedule dentro de este modulo.
+
+    Args:
+        trabajador_id: Dato utilizado por la operacion.
+        fecha_inicio: Dato utilizado por la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     active_schedules = HorarioTrabajador.query.filter_by(
         trabajador_id=trabajador_id,
         activo=True,

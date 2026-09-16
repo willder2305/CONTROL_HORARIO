@@ -141,6 +141,16 @@ X-Agent-Token: <BIOMETRIC_AGENT_TOKEN>
 
 /api/agent/fingerprints exporta solo id, 	emplate, provider y ersion de huellas activas de trabajadores activos. No exporta nombre, apellido, codigo ni datos administrativos.
 
+## Navegacion inicial
+
+La pantalla inicial presenta un unico boton principal MARCAR para trabajadores.
+El acceso administrativo se realiza desde el icono de usuario ubicado en la esquina superior derecha.
+
+- /: Inicio.
+- /marcar: Marcacion biometrica automatica.
+- /admin/login: Inicio de sesion administrativo.
+- /admin: Panel administrativo protegido.
+
 ## Agente local
 
 Archivos principales:

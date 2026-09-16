@@ -1,3 +1,7 @@
+/**
+ * Modulo de interfaz Horarios del sistema de control de horarios.
+ * Mantiene la responsabilidad indicada sin duplicar logica de dominio del backend.
+ */
 import { useEffect, useMemo, useState } from 'react';
 
 import AdminNav from '../../components/AdminNav';
@@ -35,6 +39,11 @@ const assignmentInitial = {
   tolerancia_regreso_almuerzo: 0,
 };
 
+/**
+ * Administra plantillas, asignaciones e historial de horarios individuales. Horarios.jsx.
+ *
+ * @returns {JSX.Element|Promise<unknown>|unknown} Resultado de la operacion o elemento renderizado.
+ */
 export default function Horarios() {
   const [plantillas, setPlantillas] = useState([]);
   const [trabajadores, setTrabajadores] = useState([]);
@@ -45,6 +54,11 @@ export default function Horarios() {
   const [error, setError] = useState('');
   const isEditingTemplate = useMemo(() => Boolean(templateForm.id), [templateForm.id]);
 
+  /**
+   * Carga los datos requeridos por la vista y refleja errores recuperables en la interfaz.
+   *
+   * @returns {JSX.Element|Promise<unknown>|unknown} Resultado de la operacion o elemento renderizado.
+   */
   async function loadData(selectedWorkerId = assignment.trabajador_id) {
     const [templatesResponse, workersResponse] = await Promise.all([
       listPlantillas(),
@@ -65,6 +79,11 @@ export default function Horarios() {
     loadData().catch(() => setError('No se pudieron cargar los horarios.'));
   }, []);
 
+  /**
+   * Gestiona la interaccion del usuario y actualiza el estado de esta pantalla de forma controlada.
+   *
+   * @returns {JSX.Element|Promise<unknown>|unknown} Resultado de la operacion o elemento renderizado.
+   */
   function handleTemplateChange(event) {
     setTemplateForm((current) => ({
       ...current,
@@ -72,6 +91,11 @@ export default function Horarios() {
     }));
   }
 
+  /**
+   * Gestiona la interaccion del usuario y actualiza el estado de esta pantalla de forma controlada.
+   *
+   * @returns {JSX.Element|Promise<unknown>|unknown} Resultado de la operacion o elemento renderizado.
+   */
   function handleAssignmentChange(event) {
     const nextValue = event.target.value;
     setAssignment((current) => ({
@@ -86,6 +110,11 @@ export default function Horarios() {
     }
   }
 
+  /**
+   * Crea o actualiza la plantilla de horario que se esta editando y recarga la informacion visible. Horarios.jsx.
+   *
+   * @returns {JSX.Element|Promise<unknown>|unknown} Resultado de la operacion o elemento renderizado.
+   */
   async function saveTemplate(event) {
     event.preventDefault();
     setError('');
@@ -105,6 +134,11 @@ export default function Horarios() {
     }
   }
 
+  /**
+   * Carga una plantilla existente en el formulario para editar sus horas y tolerancias. Horarios.jsx.
+   *
+   * @returns {JSX.Element|Promise<unknown>|unknown} Resultado de la operacion o elemento renderizado.
+   */
   function editTemplate(template) {
     setTemplateForm({
       ...template,
@@ -115,6 +149,11 @@ export default function Horarios() {
     setMessage('');
   }
 
+  /**
+   * Desactiva una plantilla para impedir nuevas asignaciones sin eliminar su historial. Horarios.jsx.
+   *
+   * @returns {JSX.Element|Promise<unknown>|unknown} Resultado de la operacion o elemento renderizado.
+   */
   async function disableTemplate(template) {
     setError('');
     setMessage('');
@@ -127,6 +166,11 @@ export default function Horarios() {
     }
   }
 
+  /**
+   * Asigna una plantilla o un horario personalizado al trabajador y conserva la vigencia historica. Horarios.jsx.
+   *
+   * @returns {JSX.Element|Promise<unknown>|unknown} Resultado de la operacion o elemento renderizado.
+   */
   async function assignSchedule(event) {
     event.preventDefault();
     setError('');

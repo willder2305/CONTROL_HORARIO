@@ -1,3 +1,8 @@
+"""Modulo biometria del sistema de control de horarios.
+
+Agrupa la logica propia necesaria para esta responsabilidad sin exponer detalles de infraestructura.
+"""
+
 from flask import Blueprint, jsonify, request
 
 from app import db
@@ -11,6 +16,15 @@ biometria_bp = Blueprint("biometria", __name__)
 
 
 def serialize_worker(worker):
+    """
+    Atiende el endpoint Flask asociado a serialize_worker y devuelve una respuesta JSON acorde al resultado de la operacion.
+
+    Args:
+        worker: Dato utilizado por la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     return {
         "id": worker.id,
         "codigo": worker.codigo,
@@ -21,6 +35,15 @@ def serialize_worker(worker):
 
 
 def serialize_fingerprint(fingerprint):
+    """
+    Atiende el endpoint Flask asociado a serialize_fingerprint y devuelve una respuesta JSON acorde al resultado de la operacion.
+
+    Args:
+        fingerprint: Dato utilizado por la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     return {
         "id": fingerprint.id,
         "trabajador_id": fingerprint.trabajador_id,
@@ -33,6 +56,17 @@ def serialize_fingerprint(fingerprint):
 
 
 def audit(action, entity_id, description):
+    """
+    Atiende el endpoint Flask asociado a audit y devuelve una respuesta JSON acorde al resultado de la operacion.
+
+    Args:
+        action: Dato utilizado por la operacion.
+        entity_id: Dato utilizado por la operacion.
+        description: Dato utilizado por la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     admin = current_admin()
     db.session.add(
         Auditoria(
@@ -47,6 +81,18 @@ def audit(action, entity_id, description):
 
 
 def resolve_enrollment_template(data, worker, provider, fingerprint_id):
+    """
+    Atiende el endpoint Flask asociado a resolve_enrollment_template y devuelve una respuesta JSON acorde al resultado de la operacion.
+
+    Args:
+        data: Dato utilizado por la operacion.
+        worker: Dato utilizado por la operacion.
+        provider: Dato utilizado por la operacion.
+        fingerprint_id: Dato utilizado por la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     template = template_from_agent_payload(data, excluded_worker_id=worker.id)
     if template is not None:
         return template, "local_agent", "ControlHorarioBiometricAgent"
@@ -63,6 +109,15 @@ def resolve_enrollment_template(data, worker, provider, fingerprint_id):
 @biometria_bp.post("/trabajadores/<int:worker_id>/registrar")
 @require_admin
 def enroll_worker_fingerprint(worker_id):
+    """
+    Atiende el endpoint Flask asociado a enroll_worker_fingerprint y devuelve una respuesta JSON acorde al resultado de la operacion.
+
+    Args:
+        worker_id: Dato utilizado por la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     worker = Trabajador.query.get_or_404(worker_id)
     data = request.get_json(silent=True) or {}
     fingerprint_id = (data.get("fingerprint_id") or "").strip().upper()
@@ -144,6 +199,12 @@ def enroll_worker_fingerprint(worker_id):
 @biometria_bp.get("/device/status")
 @require_admin
 def device_status():
+    """
+    Atiende el endpoint Flask asociado a device_status y devuelve una respuesta JSON acorde al resultado de la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     provider = get_fingerprint_provider()
     return jsonify({"success": True, "data": provider.status()})
 
@@ -151,6 +212,15 @@ def device_status():
 @biometria_bp.get("/trabajadores/<int:worker_id>/estado")
 @require_admin
 def worker_fingerprint_status(worker_id):
+    """
+    Atiende el endpoint Flask asociado a worker_fingerprint_status y devuelve una respuesta JSON acorde al resultado de la operacion.
+
+    Args:
+        worker_id: Dato utilizado por la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     worker = Trabajador.query.get_or_404(worker_id)
     fingerprint = Huella.query.filter_by(trabajador_id=worker.id, activa=True).first()
     return jsonify(
@@ -167,6 +237,12 @@ def worker_fingerprint_status(worker_id):
 
 @biometria_bp.post("/identificar")
 def identify_fingerprint():
+    """
+    Atiende el endpoint Flask asociado a identify_fingerprint y devuelve una respuesta JSON acorde al resultado de la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     data = request.get_json(silent=True) or {}
     fingerprint_id = (data.get("fingerprint_id") or "").strip().upper()
     provider = get_fingerprint_provider()

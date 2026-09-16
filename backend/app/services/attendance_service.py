@@ -1,3 +1,8 @@
+"""Modulo attendance service del sistema de control de horarios.
+
+Agrupa la logica propia necesaria para esta responsabilidad sin exponer detalles de infraestructura.
+"""
+
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
@@ -44,16 +49,39 @@ MARCACION_COOLDOWN_SECONDS = 30
 
 @dataclass
 class ResultadoValidacion:
+    """
+    Representa ResultadoValidacion dentro del dominio de control de horarios.
+
+    Centraliza los datos y el comportamiento asociados a esta entidad o servicio.
+    """
     valido: bool
     code: str
     message: str
 
 
 def serialize_time(value):
+    """
+    Convierte una entidad de dominio a una estructura segura y serializable para respuestas de la API.
+
+    Args:
+        value: Dato utilizado por la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     return value.strftime("%H:%M") if value else None
 
 
 def serialize_worker(worker):
+    """
+    Convierte una entidad de dominio a una estructura segura y serializable para respuestas de la API.
+
+    Args:
+        worker: Dato utilizado por la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     return {
         "id": worker.id,
         "codigo": worker.codigo,
@@ -64,6 +92,15 @@ def serialize_worker(worker):
 
 
 def serialize_mark(mark):
+    """
+    Convierte una entidad de dominio a una estructura segura y serializable para respuestas de la API.
+
+    Args:
+        mark: Dato utilizado por la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     return {
         "id": mark.id,
         "trabajador": serialize_worker(mark.trabajador),
@@ -102,6 +139,16 @@ def obtener_marcaciones_dia(trabajador_id, fecha):
 
 
 def obtener_horario_activo(trabajador_id, fecha):
+    """
+    Obtiene los datos requeridos por esta operacion respetando las reglas vigentes del sistema.
+
+    Args:
+        trabajador_id: Dato utilizado por la operacion.
+        fecha: Dato utilizado por la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     return (
         HorarioTrabajador.query.filter(
             HorarioTrabajador.trabajador_id == trabajador_id,
@@ -130,6 +177,15 @@ def obtener_horario_trabajador(trabajador_id, fecha):
 
 
 def trabajador_tiene_almuerzo(horario):
+    """
+    Implementa la responsabilidad de trabajador tiene almuerzo dentro de este modulo.
+
+    Args:
+        horario: Dato utilizado por la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     return bool(
         horario
         and horario.hora_salida_almuerzo is not None
@@ -138,6 +194,15 @@ def trabajador_tiene_almuerzo(horario):
 
 
 def construir_secuencia_marcaciones(horario):
+    """
+    Implementa la responsabilidad de construir secuencia marcaciones dentro de este modulo.
+
+    Args:
+        horario: Dato utilizado por la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     if not horario:
         return ()
     if trabajador_tiene_almuerzo(horario):
@@ -146,6 +211,16 @@ def construir_secuencia_marcaciones(horario):
 
 
 def determinar_siguiente_marcacion(trabajador, fecha):
+    """
+    Determina el siguiente evento pendiente de la jornada segun el horario vigente y las marcas existentes.
+
+    Args:
+        trabajador: Dato utilizado por la operacion.
+        fecha: Dato utilizado por la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     horario = obtener_horario_activo(trabajador.id, fecha)
     if not horario:
         return {
@@ -174,6 +249,16 @@ def determinar_siguiente_marcacion(trabajador, fecha):
 
 
 def validar_duplicado(tipo_marcacion, marcaciones_dia):
+    """
+    Valida y transforma datos externos al tipo de dominio esperado, informando errores de formato cuando corresponde.
+
+    Args:
+        tipo_marcacion: Dato utilizado por la operacion.
+        marcaciones_dia: Dato utilizado por la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     if tipo_marcacion not in marcaciones_dia:
         return ResultadoValidacion(True, "OK", "No existe marcacion duplicada.")
 
@@ -270,6 +355,16 @@ def validar_secuencia(trabajador_id, tipo_marcacion, fecha):
 
 
 def obtener_proxima_marcacion(trabajador_id, fecha):
+    """
+    Obtiene los datos requeridos por esta operacion respetando las reglas vigentes del sistema.
+
+    Args:
+        trabajador_id: Dato utilizado por la operacion.
+        fecha: Dato utilizado por la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     marcaciones_dia = obtener_marcaciones_dia(trabajador_id, fecha)
     horario = obtener_horario_activo(trabajador_id, fecha)
     for tipo_marcacion in construir_secuencia_marcaciones(horario):
@@ -301,6 +396,16 @@ def obtener_hora_programada(horario, tipo_marcacion):
 
 
 def calcular_diferencia_minutos(hora_real, hora_programada):
+    """
+    Calcula el valor derivado requerido por las reglas de asistencia.
+
+    Args:
+        hora_real: Dato utilizado por la operacion.
+        hora_programada: Dato utilizado por la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     real_minutes = hora_real.hour * 60 + hora_real.minute
     scheduled_minutes = hora_programada.hour * 60 + hora_programada.minute
     return real_minutes - scheduled_minutes
@@ -399,6 +504,15 @@ def preparar_datos_puntualidad(trabajador_id, tipo_marcacion, fecha_hora=None):
 
 
 def identificar_trabajador_por_huella(fingerprint_id):
+    """
+    Localiza una coincidencia biometrica usando los templates disponibles y el umbral configurado.
+
+    Args:
+        fingerprint_id: Dato utilizado por la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     provider = get_fingerprint_provider()
     active_fingerprints = Huella.query.filter_by(activa=True).all()
     fingerprint = provider.identify(fingerprint_id, active_fingerprints)
@@ -418,6 +532,15 @@ def identificar_trabajador_por_huella(fingerprint_id):
 
 
 def identificar_trabajador_por_huella_id(huella_id):
+    """
+    Localiza una coincidencia biometrica usando los templates disponibles y el umbral configurado.
+
+    Args:
+        huella_id: Dato utilizado por la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     fingerprint = Huella.query.filter_by(id=huella_id, activa=True).first()
     if not fingerprint or not fingerprint.trabajador:
         return {
@@ -435,6 +558,16 @@ def identificar_trabajador_por_huella_id(huella_id):
 
 
 def registrar_marcacion_para_trabajador(trabajador, fecha_hora=None):
+    """
+    Calcula y persiste la siguiente marcacion automatica de un trabajador.
+
+    Args:
+        trabajador: Dato utilizado por la operacion.
+        fecha_hora: Dato utilizado por la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     fecha_hora_real = fecha_hora or obtener_hora_actual()
     fecha = fecha_hora_real.date()
 
@@ -528,6 +661,16 @@ def registrar_marcacion_para_trabajador(trabajador, fecha_hora=None):
 
 
 def registrar_marcacion_por_huella_autorizada(huella_id, fecha_hora=None):
+    """
+    Registra una marcacion cuando el agente local ya identifico una huella activa.
+
+    Args:
+        huella_id: Dato utilizado por la operacion.
+        fecha_hora: Dato utilizado por la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     identification = identificar_trabajador_por_huella_id(huella_id)
     if not identification["success"]:
         return identification

@@ -1,3 +1,8 @@
+"""Modulo auth del sistema de control de horarios.
+
+Agrupa la logica propia necesaria para esta responsabilidad sin exponer detalles de infraestructura.
+"""
+
 from functools import wraps
 
 from flask import Blueprint, jsonify, request, session
@@ -12,6 +17,15 @@ auth_bp = Blueprint("auth", __name__)
 
 
 def serialize_admin(admin):
+    """
+    Atiende el endpoint Flask asociado a serialize_admin y devuelve una respuesta JSON acorde al resultado de la operacion.
+
+    Args:
+        admin: Dato utilizado por la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     return {
         "id": admin.id,
         "usuario": admin.usuario,
@@ -22,6 +36,12 @@ def serialize_admin(admin):
 
 
 def current_admin():
+    """
+    Atiende el endpoint Flask asociado a current_admin y devuelve una respuesta JSON acorde al resultado de la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     admin_id = session.get("admin_id")
     if not admin_id:
         return None
@@ -43,6 +63,12 @@ def require_admin(view):
     """
     @wraps(view)
     def wrapped(*args, **kwargs):
+        """
+        Atiende el endpoint Flask asociado a wrapped y devuelve una respuesta JSON acorde al resultado de la operacion.
+
+        Returns:
+            Resultado de la operacion o respuesta HTTP correspondiente.
+        """
         admin = current_admin()
         if not admin:
             return (
@@ -62,6 +88,12 @@ def require_admin(view):
 
 @auth_bp.post("/login")
 def login():
+    """
+    Atiende el endpoint Flask asociado a login y devuelve una respuesta JSON acorde al resultado de la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     data = request.get_json(silent=True) or {}
     usuario = (data.get("usuario") or "").strip()
     password = data.get("password") or ""
@@ -111,12 +143,24 @@ def login():
 
 @auth_bp.post("/logout")
 def logout():
+    """
+    Atiende el endpoint Flask asociado a logout y devuelve una respuesta JSON acorde al resultado de la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     session.clear()
     return jsonify({"success": True, "message": "Sesion cerrada correctamente."})
 
 
 @auth_bp.get("/me")
 def me():
+    """
+    Atiende el endpoint Flask asociado a me y devuelve una respuesta JSON acorde al resultado de la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     admin = current_admin()
     if not admin:
         return (

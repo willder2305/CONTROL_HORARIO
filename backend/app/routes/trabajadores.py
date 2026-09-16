@@ -1,3 +1,8 @@
+"""Modulo trabajadores del sistema de control de horarios.
+
+Agrupa la logica propia necesaria para esta responsabilidad sin exponer detalles de infraestructura.
+"""
+
 from flask import Blueprint, jsonify, request
 from sqlalchemy import func, or_
 
@@ -12,10 +17,28 @@ trabajadores_bp = Blueprint("trabajadores", __name__)
 
 
 def serialize_time(value):
+    """
+    Atiende el endpoint Flask asociado a serialize_time y devuelve una respuesta JSON acorde al resultado de la operacion.
+
+    Args:
+        value: Dato utilizado por la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     return value.strftime("%H:%M") if value else None
 
 
 def serialize_current_schedule(schedule):
+    """
+    Atiende el endpoint Flask asociado a serialize_current_schedule y devuelve una respuesta JSON acorde al resultado de la operacion.
+
+    Args:
+        schedule: Dato utilizado por la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     if not schedule:
         return None
     return {
@@ -32,6 +55,15 @@ def serialize_current_schedule(schedule):
 
 
 def get_current_schedule(trabajador_id):
+    """
+    Atiende el endpoint Flask asociado a get_current_schedule y devuelve una respuesta JSON acorde al resultado de la operacion.
+
+    Args:
+        trabajador_id: Dato utilizado por la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     return (
         HorarioTrabajador.query.filter_by(trabajador_id=trabajador_id, activo=True)
         .order_by(HorarioTrabajador.fecha_inicio.desc(), HorarioTrabajador.id.desc())
@@ -40,6 +72,15 @@ def get_current_schedule(trabajador_id):
 
 
 def has_active_fingerprint(trabajador_id):
+    """
+    Atiende el endpoint Flask asociado a has_active_fingerprint y devuelve una respuesta JSON acorde al resultado de la operacion.
+
+    Args:
+        trabajador_id: Dato utilizado por la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     return (
         db.session.query(Huella.id)
         .filter_by(trabajador_id=trabajador_id, activa=True)
@@ -49,6 +90,15 @@ def has_active_fingerprint(trabajador_id):
 
 
 def serialize_worker(worker):
+    """
+    Atiende el endpoint Flask asociado a serialize_worker y devuelve una respuesta JSON acorde al resultado de la operacion.
+
+    Args:
+        worker: Dato utilizado por la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     schedule = get_current_schedule(worker.id)
     return {
         "id": worker.id,
@@ -65,6 +115,12 @@ def serialize_worker(worker):
 
 
 def next_worker_code():
+    """
+    Atiende el endpoint Flask asociado a next_worker_code y devuelve una respuesta JSON acorde al resultado de la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     last_code = (
         db.session.query(Trabajador.codigo)
         .filter(Trabajador.codigo.like("EMP-%"))
@@ -82,6 +138,15 @@ def next_worker_code():
 
 
 def validate_worker_payload(data):
+    """
+    Atiende el endpoint Flask asociado a validate_worker_payload y devuelve una respuesta JSON acorde al resultado de la operacion.
+
+    Args:
+        data: Dato utilizado por la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     nombre = (data.get("nombre") or "").strip()
     apellido = (data.get("apellido") or "").strip()
 
@@ -95,6 +160,17 @@ def validate_worker_payload(data):
 
 
 def audit(action, entity_id, description):
+    """
+    Atiende el endpoint Flask asociado a audit y devuelve una respuesta JSON acorde al resultado de la operacion.
+
+    Args:
+        action: Dato utilizado por la operacion.
+        entity_id: Dato utilizado por la operacion.
+        description: Dato utilizado por la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     admin = current_admin()
     db.session.add(
         Auditoria(
@@ -109,6 +185,17 @@ def audit(action, entity_id, description):
 
 
 def resolve_create_template(data, provider, fingerprint_id):
+    """
+    Atiende el endpoint Flask asociado a resolve_create_template y devuelve una respuesta JSON acorde al resultado de la operacion.
+
+    Args:
+        data: Dato utilizado por la operacion.
+        provider: Dato utilizado por la operacion.
+        fingerprint_id: Dato utilizado por la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     template = template_from_agent_payload(data)
     if template is not None:
         return template, "local_agent", "ControlHorarioBiometricAgent"
@@ -126,6 +213,12 @@ def resolve_create_template(data, provider, fingerprint_id):
 @trabajadores_bp.get("")
 @require_admin
 def list_workers():
+    """
+    Atiende el endpoint Flask asociado a list_workers y devuelve una respuesta JSON acorde al resultado de la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     query = Trabajador.query
     search = (request.args.get("q") or "").strip()
     estado = (request.args.get("estado") or "").strip()
@@ -151,6 +244,12 @@ def list_workers():
 @trabajadores_bp.post("")
 @require_admin
 def create_worker():
+    """
+    Atiende el endpoint Flask asociado a create_worker y devuelve una respuesta JSON acorde al resultado de la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     data = request.get_json(silent=True) or {}
     nombre, apellido, errors = validate_worker_payload(data)
     if errors:
@@ -270,6 +369,15 @@ def create_worker():
 @trabajadores_bp.get("/<int:worker_id>")
 @require_admin
 def get_worker(worker_id):
+    """
+    Atiende el endpoint Flask asociado a get_worker y devuelve una respuesta JSON acorde al resultado de la operacion.
+
+    Args:
+        worker_id: Dato utilizado por la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     worker = Trabajador.query.get_or_404(worker_id)
     return jsonify({"success": True, "data": {"trabajador": serialize_worker(worker)}})
 
@@ -277,6 +385,15 @@ def get_worker(worker_id):
 @trabajadores_bp.put("/<int:worker_id>")
 @require_admin
 def update_worker(worker_id):
+    """
+    Atiende el endpoint Flask asociado a update_worker y devuelve una respuesta JSON acorde al resultado de la operacion.
+
+    Args:
+        worker_id: Dato utilizado por la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     worker = Trabajador.query.get_or_404(worker_id)
     data = request.get_json(silent=True) or {}
     nombre, apellido, errors = validate_worker_payload(data)
@@ -315,6 +432,15 @@ def update_worker(worker_id):
 @trabajadores_bp.patch("/<int:worker_id>/activar")
 @require_admin
 def activate_worker(worker_id):
+    """
+    Atiende el endpoint Flask asociado a activate_worker y devuelve una respuesta JSON acorde al resultado de la operacion.
+
+    Args:
+        worker_id: Dato utilizado por la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     worker = Trabajador.query.get_or_404(worker_id)
     provider = get_fingerprint_provider()
     if provider.provider_name != "mock" and not has_active_fingerprint(worker.id):
@@ -344,6 +470,15 @@ def activate_worker(worker_id):
 @trabajadores_bp.patch("/<int:worker_id>/desactivar")
 @require_admin
 def deactivate_worker(worker_id):
+    """
+    Atiende el endpoint Flask asociado a deactivate_worker y devuelve una respuesta JSON acorde al resultado de la operacion.
+
+    Args:
+        worker_id: Dato utilizado por la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     worker = Trabajador.query.get_or_404(worker_id)
     worker.activo = False
     audit("DESACTIVAR_TRABAJADOR", worker.id, f"Trabajador desactivado: {worker.codigo}")

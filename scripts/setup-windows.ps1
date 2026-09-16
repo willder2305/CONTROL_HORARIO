@@ -1,4 +1,7 @@
-$ErrorActionPreference = "Stop"
+<#
+Prepara las dependencias locales de Windows para ejecutar el sistema en modo produccion.
+Crea backend\.venv si falta e instala dependencias; las credenciales se configuran despues en backend\.env.
+#>$ErrorActionPreference = "Stop"
 
 Write-Host "[1/4] Creando entorno virtual backend si no existe..."
 if (-not (Test-Path "backend\.venv\Scripts\python.exe")) {
