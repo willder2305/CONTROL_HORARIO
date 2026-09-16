@@ -1,3 +1,7 @@
+/**
+ * Modulo de interfaz Dashboard del sistema de control de horarios.
+ * Mantiene la responsabilidad indicada sin duplicar logica de dominio del backend.
+ */
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
@@ -16,6 +20,11 @@ const metricLabels = [
   ['pendientes_salida', 'Pendientes de salida'],
 ];
 
+/**
+ * Carga los indicadores diarios y muestra accesos a los modulos administrativos. Dashboard.jsx.
+ *
+ * @returns {JSX.Element|Promise<unknown>|unknown} Resultado de la operacion o elemento renderizado.
+ */
 export default function Dashboard() {
   const [admin, setAdmin] = useState(null);
   const [metrics, setMetrics] = useState(null);

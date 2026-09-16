@@ -1,3 +1,7 @@
+/**
+ * Modulo de interfaz Trabajadores del sistema de control de horarios.
+ * Mantiene la responsabilidad indicada sin duplicar logica de dominio del backend.
+ */
 import { useEffect, useMemo, useState } from 'react';
 
 import AdminNav from '../../components/AdminNav';
@@ -18,6 +22,11 @@ const initialForm = {
   fingerprintId: '',
 };
 
+/**
+ * Gestiona la consulta, alta, edicion, activacion y registro biometrico de trabajadores. Trabajadores.jsx.
+ *
+ * @returns {JSX.Element|Promise<unknown>|unknown} Resultado de la operacion o elemento renderizado.
+ */
 export default function Trabajadores() {
   const [trabajadores, setTrabajadores] = useState([]);
   const [form, setForm] = useState(initialForm);
@@ -31,6 +40,11 @@ export default function Trabajadores() {
   const isMockMode = readerStatus?.provider === 'mock';
   const isPhysicalReader = ['zk9500', 'local_agent'].includes(readerStatus?.provider);
 
+  /**
+   * Envia la operacion administrativa a la API y devuelve su respuesta para actualizar la interfaz.
+   *
+   * @returns {JSX.Element|Promise<unknown>|unknown} Resultado de la operacion o elemento renderizado.
+   */
   function updateFingerprintProgress(body) {
     setFingerprintModal((current) => (current ? { ...current, body } : current));
   }
@@ -50,6 +64,11 @@ export default function Trabajadores() {
     }
   }
 
+  /**
+   * Carga los datos requeridos por la vista y refleja errores recuperables en la interfaz.
+   *
+   * @returns {JSX.Element|Promise<unknown>|unknown} Resultado de la operacion o elemento renderizado.
+   */
   async function loadReaderStatus() {
     try {
       const response = await obtenerEstadoLector();
@@ -64,6 +83,11 @@ export default function Trabajadores() {
     loadReaderStatus();
   }, []);
 
+  /**
+   * Gestiona la interaccion del usuario y actualiza el estado de esta pantalla de forma controlada.
+   *
+   * @returns {JSX.Element|Promise<unknown>|unknown} Resultado de la operacion o elemento renderizado.
+   */
   function handleFormChange(event) {
     setForm((current) => ({
       ...current,
@@ -71,6 +95,11 @@ export default function Trabajadores() {
     }));
   }
 
+  /**
+   * Gestiona la interaccion del usuario y actualiza el estado de esta pantalla de forma controlada.
+   *
+   * @returns {JSX.Element|Promise<unknown>|unknown} Resultado de la operacion o elemento renderizado.
+   */
   function handleFilterChange(event) {
     setFilters((current) => ({
       ...current,
@@ -78,6 +107,11 @@ export default function Trabajadores() {
     }));
   }
 
+  /**
+   * Gestiona la interaccion del usuario y actualiza el estado de esta pantalla de forma controlada.
+   *
+   * @returns {JSX.Element|Promise<unknown>|unknown} Resultado de la operacion o elemento renderizado.
+   */
   async function handleSubmit(event) {
     event.preventDefault();
     setError('');
@@ -119,6 +153,11 @@ export default function Trabajadores() {
     }
   }
 
+  /**
+   * Carga el trabajador elegido en el formulario de edicion sin alterar su huella ni horario. Trabajadores.jsx.
+   *
+   * @returns {JSX.Element|Promise<unknown>|unknown} Resultado de la operacion o elemento renderizado.
+   */
   function editWorker(worker) {
     setForm({
       id: worker.id,
@@ -131,6 +170,11 @@ export default function Trabajadores() {
     setError('');
   }
 
+  /**
+   * Activa o desactiva un trabajador mediante la accion administrativa correspondiente. Trabajadores.jsx.
+   *
+   * @returns {JSX.Element|Promise<unknown>|unknown} Resultado de la operacion o elemento renderizado.
+   */
   async function toggleWorker(worker) {
     setError('');
     setMessage('');
@@ -145,6 +189,11 @@ export default function Trabajadores() {
     }
   }
 
+  /**
+   * Inicia el enrolamiento con el agente local y registra el template contra el trabajador seleccionado. Trabajadores.jsx.
+   *
+   * @returns {JSX.Element|Promise<unknown>|unknown} Resultado de la operacion o elemento renderizado.
+   */
   async function registerFingerprint(worker) {
     const fingerprintId = isMockMode
       ? window.prompt(`Identificacion biometrica de desarrollo para ${worker.codigo}.`, '')
@@ -173,11 +222,21 @@ export default function Trabajadores() {
     }
   }
 
+  /**
+   * Envía los filtros seleccionados y recarga jornada y detalle de marcaciones. Trabajadores.jsx.
+   *
+   * @returns {JSX.Element|Promise<unknown>|unknown} Resultado de la operacion o elemento renderizado.
+   */
   async function applyFilters(event) {
     event.preventDefault();
     await loadWorkers(filters);
   }
 
+  /**
+   * Restablece todos los filtros y recupera la consulta general. Trabajadores.jsx.
+   *
+   * @returns {JSX.Element|Promise<unknown>|unknown} Resultado de la operacion o elemento renderizado.
+   */
   async function clearFilters() {
     const emptyFilters = { q: '', estado: '' };
     setFilters(emptyFilters);

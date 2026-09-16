@@ -1,4 +1,7 @@
-$ErrorActionPreference = "Stop"
+<#
+Inicia ControlHorarioBiometricAgent en segundo plano para una estación de marcación local.
+Requiere que el ejecutable y la configuración instalados en ProgramData existan; no modifica tareas de Windows.
+#>$ErrorActionPreference = "Stop"
 $agentRoot = Split-Path -Parent $PSScriptRoot
 $exe = Join-Path $agentRoot "ControlHorarioBiometricAgent.exe"
 $config = Join-Path $env:ProgramData "ControlHorarioBiometricAgent\appsettings.json"

@@ -1,3 +1,8 @@
+"""Modulo   init   del sistema de control de horarios.
+
+Agrupa la logica propia necesaria para esta responsabilidad sin exponer detalles de infraestructura.
+"""
+
 from app.models.administrador import Administrador
 from app.models.auditoria import Auditoria
 from app.models.horario_trabajador import HorarioTrabajador

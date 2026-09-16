@@ -1,3 +1,8 @@
+"""Modulo config del sistema de control de horarios.
+
+Agrupa la logica propia necesaria para esta responsabilidad sin exponer detalles de infraestructura.
+"""
+
 import os
 from pathlib import Path
 from datetime import timedelta
@@ -9,6 +14,11 @@ load_dotenv(BASE_DIR / ".env")
 
 
 class Config:
+    """
+    Representa Config dentro del dominio de control de horarios.
+
+    Centraliza los datos y el comportamiento asociados a esta entidad o servicio.
+    """
     SECRET_KEY = os.getenv("SECRET_KEY", "dev-change-me")
     SQLALCHEMY_DATABASE_URI = os.getenv(
         "DATABASE_URL",

@@ -1,3 +1,7 @@
+/**
+ * Modulo de interfaz Marcaciones del sistema de control de horarios.
+ * Mantiene la responsabilidad indicada sin duplicar logica de dominio del backend.
+ */
 import { useEffect, useState } from 'react';
 
 import AdminNav from '../../components/AdminNav';
@@ -28,6 +32,11 @@ const states = [
   ['SALIDA_ANTICIPADA', 'Salida anticipada'],
 ];
 
+/**
+ * Representa una celda de jornada con la hora y el estado de una marcacion, o un guion si falta. Marcaciones.jsx.
+ *
+ * @returns {JSX.Element|Promise<unknown>|unknown} Resultado de la operacion o elemento renderizado.
+ */
 function MarkCell({ mark }) {
   if (!mark) return <span className="muted">-</span>;
   return (
@@ -38,6 +47,11 @@ function MarkCell({ mark }) {
   );
 }
 
+/**
+ * Muestra la jornada consolidada y el detalle de marcaciones segun los filtros administrativos. Marcaciones.jsx.
+ *
+ * @returns {JSX.Element|Promise<unknown>|unknown} Resultado de la operacion o elemento renderizado.
+ */
 export default function Marcaciones() {
   const [filters, setFilters] = useState(initialFilters);
   const [workers, setWorkers] = useState([]);
@@ -46,6 +60,11 @@ export default function Marcaciones() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  /**
+   * Carga los datos requeridos por la vista y refleja errores recuperables en la interfaz.
+   *
+   * @returns {JSX.Element|Promise<unknown>|unknown} Resultado de la operacion o elemento renderizado.
+   */
   async function loadData(params = filters) {
     setLoading(true);
     setError('');
@@ -70,6 +89,11 @@ export default function Marcaciones() {
     loadData();
   }, []);
 
+  /**
+   * Gestiona la interaccion del usuario y actualiza el estado de esta pantalla de forma controlada.
+   *
+   * @returns {JSX.Element|Promise<unknown>|unknown} Resultado de la operacion o elemento renderizado.
+   */
   function handleChange(event) {
     setFilters((current) => ({
       ...current,
@@ -77,11 +101,21 @@ export default function Marcaciones() {
     }));
   }
 
+  /**
+   * Envía los filtros seleccionados y recarga jornada y detalle de marcaciones. Marcaciones.jsx.
+   *
+   * @returns {JSX.Element|Promise<unknown>|unknown} Resultado de la operacion o elemento renderizado.
+   */
   async function applyFilters(event) {
     event.preventDefault();
     await loadData(filters);
   }
 
+  /**
+   * Restablece todos los filtros y recupera la consulta general. Marcaciones.jsx.
+   *
+   * @returns {JSX.Element|Promise<unknown>|unknown} Resultado de la operacion o elemento renderizado.
+   */
   async function clearFilters() {
     setFilters(initialFilters);
     await loadData(initialFilters);

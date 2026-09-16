@@ -1,3 +1,8 @@
+"""Modulo run del sistema de control de horarios.
+
+Agrupa la logica propia necesaria para esta responsabilidad sin exponer detalles de infraestructura.
+"""
+
 from app import create_app
 
 app = create_app()

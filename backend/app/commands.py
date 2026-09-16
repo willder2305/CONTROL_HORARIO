@@ -1,3 +1,8 @@
+"""Modulo commands del sistema de control de horarios.
+
+Agrupa la logica propia necesaria para esta responsabilidad sin exponer detalles de infraestructura.
+"""
+
 import getpass
 from datetime import time
 
@@ -9,6 +14,15 @@ from app.models import Administrador, PlantillaHorario
 
 
 def register_commands(app):
+    """
+    Implementa la responsabilidad de register commands dentro de este modulo.
+
+    Args:
+        app: Dato utilizado por la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     app.cli.add_command(create_admin_command)
     app.cli.add_command(seed_schedules_command)
 

@@ -1,3 +1,8 @@
+"""Modulo   init   del sistema de control de horarios.
+
+Agrupa la logica propia necesaria para esta responsabilidad sin exponer detalles de infraestructura.
+"""
+
 from flask import Flask
 from flask_cors import CORS
 from flask_migrate import Migrate
@@ -11,6 +16,15 @@ migrate = Migrate()
 
 
 def create_app(config_class=Config):
+    """
+    Construye y configura la aplicacion Flask, sus extensiones, controles de seguridad y blueprints.
+
+    Args:
+        config_class: Dato utilizado por la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     app = Flask(__name__)
     app.config.from_object(config_class)
 

@@ -209,6 +209,16 @@ Build:
 npm run build
 ```
 
+## Navegacion inicial
+
+La pantalla inicial presenta un unico boton principal `MARCAR` para los trabajadores.
+El acceso administrativo se encuentra en el icono de usuario de la esquina superior derecha.
+
+- `/`: Inicio y acceso a marcacion.
+- `/marcar`: Marcacion biometrica automatica.
+- `/admin/login`: Inicio de sesion administrativo.
+- `/admin`: Dashboard administrativo protegido.
+
 ## Rutas principales
 
 Frontend:
@@ -244,12 +254,12 @@ La pantalla publica `/marcar` no solicita usuario, password, codigo, nombre ni I
 
 Flujo:
 
-1. Trabajador selecciona tipo de marcacion.
-2. Sistema solicita huella.
-3. Backend identifica trabajador por huella.
+1. Trabajador abre la pantalla inicial y presiona `MARCAR`.
+2. Sistema solicita colocar el dedo en el ZK9500.
+3. El agente biometrico identifica la huella localmente.
 4. Backend toma la hora oficial del servidor.
 5. Backend consulta horario individual vigente.
-6. Backend valida secuencia y duplicados.
+6. Backend determina automaticamente la siguiente funcion, valida secuencia y duplicados.
 7. Backend calcula estado y minutos.
 8. Backend guarda marcacion.
 

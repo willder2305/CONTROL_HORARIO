@@ -1,3 +1,7 @@
+/**
+ * Modulo de interfaz trabajadorService del sistema de control de horarios.
+ * Mantiene la responsabilidad indicada sin duplicar logica de dominio del backend.
+ */
 import api from './api';
 import { enrollFingerprintWithAgent, useLocalAgent } from './localAgentService';
 
@@ -6,6 +10,11 @@ export async function listTrabajadores(params = {}) {
   return response.data;
 }
 
+/**
+ * Envia la operacion administrativa a la API y devuelve su respuesta para actualizar la interfaz.
+ *
+ * @returns {JSX.Element|Promise<unknown>|unknown} Resultado de la operacion o elemento renderizado.
+ */
 export async function createTrabajador(payload, options = {}) {
   const requestPayload = { ...payload };
 
@@ -20,16 +29,31 @@ export async function createTrabajador(payload, options = {}) {
   return response.data;
 }
 
+/**
+ * Envia la operacion administrativa a la API y devuelve su respuesta para actualizar la interfaz.
+ *
+ * @returns {JSX.Element|Promise<unknown>|unknown} Resultado de la operacion o elemento renderizado.
+ */
 export async function updateTrabajador(id, payload) {
   const response = await api.put('/admin/trabajadores/' + id, payload);
   return response.data;
 }
 
+/**
+ * Envia la operacion administrativa a la API y devuelve su respuesta para actualizar la interfaz.
+ *
+ * @returns {JSX.Element|Promise<unknown>|unknown} Resultado de la operacion o elemento renderizado.
+ */
 export async function activarTrabajador(id) {
   const response = await api.patch('/admin/trabajadores/' + id + '/activar');
   return response.data;
 }
 
+/**
+ * Envia la operacion administrativa a la API y devuelve su respuesta para actualizar la interfaz.
+ *
+ * @returns {JSX.Element|Promise<unknown>|unknown} Resultado de la operacion o elemento renderizado.
+ */
 export async function desactivarTrabajador(id) {
   const response = await api.patch('/admin/trabajadores/' + id + '/desactivar');
   return response.data;

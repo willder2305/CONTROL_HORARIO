@@ -1,3 +1,8 @@
+"""Modulo administrador del sistema de control de horarios.
+
+Agrupa la logica propia necesaria para esta responsabilidad sin exponer detalles de infraestructura.
+"""
+
 from datetime import datetime
 
 from app import db
@@ -5,6 +10,11 @@ from app.utils.datetime_utils import obtener_hora_actual
 
 
 class Administrador(db.Model):
+    """
+    Representa Administrador dentro del dominio de control de horarios.
+
+    Centraliza los datos y el comportamiento asociados a esta entidad o servicio.
+    """
     __tablename__ = "administradores"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -25,4 +35,10 @@ class Administrador(db.Model):
     auditorias = db.relationship("Auditoria", back_populates="administrador")
 
     def __repr__(self):
+        """
+        Implementa la responsabilidad de   repr   dentro de este modulo.
+
+        Returns:
+            Resultado de la operacion o respuesta HTTP correspondiente.
+        """
         return f"<Administrador {self.usuario}>"

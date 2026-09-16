@@ -1,14 +1,28 @@
+/**
+ * Modulo de interfaz Login del sistema de control de horarios.
+ * Mantiene la responsabilidad indicada sin duplicar logica de dominio del backend.
+ */
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import { login } from '../../services/authService';
 
+/**
+ * Renderiza el inicio de sesion administrativo y redirige al panel tras una autenticacion correcta. Login.jsx.
+ *
+ * @returns {JSX.Element|Promise<unknown>|unknown} Resultado de la operacion o elemento renderizado.
+ */
 export default function Login() {
   const navigate = useNavigate();
   const [form, setForm] = useState({ usuario: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  /**
+   * Gestiona la interaccion del usuario y actualiza el estado de esta pantalla de forma controlada.
+   *
+   * @returns {JSX.Element|Promise<unknown>|unknown} Resultado de la operacion o elemento renderizado.
+   */
   function handleChange(event) {
     setForm((current) => ({
       ...current,
@@ -16,6 +30,11 @@ export default function Login() {
     }));
   }
 
+  /**
+   * Gestiona la interaccion del usuario y actualiza el estado de esta pantalla de forma controlada.
+   *
+   * @returns {JSX.Element|Promise<unknown>|unknown} Resultado de la operacion o elemento renderizado.
+   */
   async function handleSubmit(event) {
     event.preventDefault();
     setError('');

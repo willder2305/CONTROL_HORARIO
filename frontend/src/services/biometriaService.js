@@ -1,3 +1,7 @@
+/**
+ * Modulo de interfaz biometriaService del sistema de control de horarios.
+ * Mantiene la responsabilidad indicada sin duplicar logica de dominio del backend.
+ */
 import api from './api';
 import {
   enrollFingerprintWithAgent,
@@ -5,6 +9,11 @@ import {
   useLocalAgent,
 } from './localAgentService';
 
+/**
+ * Consulta la API correspondiente y devuelve los datos normalizados para la interfaz.
+ *
+ * @returns {JSX.Element|Promise<unknown>|unknown} Resultado de la operacion o elemento renderizado.
+ */
 export async function obtenerEstadoLector() {
   if (useLocalAgent()) {
     const response = await getAgentStatus();
@@ -22,6 +31,11 @@ export async function obtenerEstadoLector() {
   return response.data;
 }
 
+/**
+ * Envia la operacion administrativa a la API y devuelve su respuesta para actualizar la interfaz.
+ *
+ * @returns {JSX.Element|Promise<unknown>|unknown} Resultado de la operacion o elemento renderizado.
+ */
 export async function registrarHuella(trabajadorId, fingerprintId, options = {}) {
   const payload = {};
   if (fingerprintId) {
@@ -41,6 +55,11 @@ export async function registrarHuella(trabajadorId, fingerprintId, options = {})
   return response.data;
 }
 
+/**
+ * Solicita identificar una huella al endpoint biometrico cuando el flujo no usa el agente local. biometriaService.js.
+ *
+ * @returns {JSX.Element|Promise<unknown>|unknown} Resultado de la operacion o elemento renderizado.
+ */
 export async function identificarHuella(fingerprintId) {
   const payload = {};
   if (fingerprintId) {

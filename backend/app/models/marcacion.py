@@ -1,8 +1,18 @@
+"""Modulo marcacion del sistema de control de horarios.
+
+Agrupa la logica propia necesaria para esta responsabilidad sin exponer detalles de infraestructura.
+"""
+
 from app import db
 from app.utils.datetime_utils import obtener_hora_actual
 
 
 class Marcacion(db.Model):
+    """
+    Representa Marcacion dentro del dominio de control de horarios.
+
+    Centraliza los datos y el comportamiento asociados a esta entidad o servicio.
+    """
     __tablename__ = "marcaciones"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -46,4 +56,10 @@ class Marcacion(db.Model):
     )
 
     def __repr__(self):
+        """
+        Implementa la responsabilidad de   repr   dentro de este modulo.
+
+        Returns:
+            Resultado de la operacion o respuesta HTTP correspondiente.
+        """
         return f"<Marcacion trabajador_id={self.trabajador_id} tipo={self.tipo_marcacion}>"

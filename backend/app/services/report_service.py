@@ -1,3 +1,8 @@
+"""Modulo report service del sistema de control de horarios.
+
+Agrupa la logica propia necesaria para esta responsabilidad sin exponer detalles de infraestructura.
+"""
+
 from io import BytesIO
 
 from openpyxl import Workbook
@@ -25,6 +30,15 @@ REPORT_HEADERS = [
 
 
 def build_excel_report(marks):
+    """
+    Construye o consulta la coleccion de datos necesaria para la operacion solicitada.
+
+    Args:
+        marks: Dato utilizado por la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     workbook = Workbook()
     worksheet = workbook.active
     worksheet.title = "Reporte"
@@ -85,6 +99,12 @@ def build_pdf_report(marks, filters, summary):
 
 
 def build_pdf_styles():
+    """
+    Construye o consulta la coleccion de datos necesaria para la operacion solicitada.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     styles = getSampleStyleSheet()
     styles.add(
         ParagraphStyle(
@@ -132,6 +152,16 @@ def build_pdf_styles():
 
 
 def build_pdf_filter_table(filters, styles):
+    """
+    Construye o consulta la coleccion de datos necesaria para la operacion solicitada.
+
+    Args:
+        filters: Dato utilizado por la operacion.
+        styles: Dato utilizado por la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     generated_at = obtener_hora_actual().strftime("%Y-%m-%d %H:%M")
     data = [
         ["Fecha de generacion", generated_at, "Rango", filters.get("rango", "Todos")],
@@ -159,6 +189,16 @@ def build_pdf_filter_table(filters, styles):
 
 
 def build_pdf_summary_table(summary, styles):
+    """
+    Construye o consulta la coleccion de datos necesaria para la operacion solicitada.
+
+    Args:
+        summary: Dato utilizado por la operacion.
+        styles: Dato utilizado por la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     data = [
         [
             "Total marcaciones",
@@ -194,6 +234,16 @@ def build_pdf_summary_table(summary, styles):
 
 
 def build_pdf_marks_table(marks, styles):
+    """
+    Construye o consulta la coleccion de datos necesaria para la operacion solicitada.
+
+    Args:
+        marks: Dato utilizado por la operacion.
+        styles: Dato utilizado por la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     headers = [
         "Fecha",
         "Codigo",
@@ -258,6 +308,16 @@ def build_pdf_marks_table(marks, styles):
 
 
 def draw_page_footer(canvas, document):
+    """
+    Implementa la responsabilidad de draw page footer dentro de este modulo.
+
+    Args:
+        canvas: Dato utilizado por la operacion.
+        document: Dato utilizado por la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     canvas.saveState()
     canvas.setFont("Helvetica", 7)
     canvas.setFillColor(colors.HexColor("#607D8B"))
@@ -270,14 +330,41 @@ def draw_page_footer(canvas, document):
 
 
 def format_date(value):
+    """
+    Implementa la responsabilidad de format date dentro de este modulo.
+
+    Args:
+        value: Dato utilizado por la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     return value.strftime("%Y-%m-%d") if value else ""
 
 
 def format_time(value):
+    """
+    Implementa la responsabilidad de format time dentro de este modulo.
+
+    Args:
+        value: Dato utilizado por la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     return value.strftime("%H:%M") if value else ""
 
 
 def apply_simple_report_format(worksheet):
+    """
+    Implementa la responsabilidad de apply simple report format dentro de este modulo.
+
+    Args:
+        worksheet: Dato utilizado por la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     header_fill = PatternFill("solid", fgColor="1F4E78")
     header_font = Font(color="FFFFFF", bold=True)
     thin_border = Border(

@@ -1,3 +1,8 @@
+"""Modulo   init   del sistema de control de horarios.
+
+Agrupa la logica propia necesaria para esta responsabilidad sin exponer detalles de infraestructura.
+"""
+
 from flask import current_app
 
 from app.services.fingerprint.local_agent_provider import LocalAgentFingerprintProvider
@@ -6,6 +11,12 @@ from app.services.fingerprint.real_provider import RealFingerprintProvider
 
 
 def get_fingerprint_provider():
+    """
+    Resuelve el provider biometrico configurado para el entorno sin acoplar las rutas a una implementacion concreta.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     provider = current_app.config.get("FINGERPRINT_PROVIDER", "mock")
     if provider == "mock":
         return MockFingerprintProvider()

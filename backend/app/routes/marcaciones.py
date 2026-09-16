@@ -1,3 +1,8 @@
+"""Modulo marcaciones del sistema de control de horarios.
+
+Agrupa la logica propia necesaria para esta responsabilidad sin exponer detalles de infraestructura.
+"""
+
 from datetime import datetime
 
 from flask import Blueprint, jsonify, request
@@ -13,16 +18,43 @@ admin_marcaciones_bp = Blueprint("admin_marcaciones", __name__)
 
 
 def parse_date(value):
+    """
+    Atiende el endpoint Flask asociado a parse_date y devuelve una respuesta JSON acorde al resultado de la operacion.
+
+    Args:
+        value: Dato utilizado por la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     if not value:
         return None
     return datetime.strptime(value, "%Y-%m-%d").date()
 
 
 def serialize_time(value):
+    """
+    Atiende el endpoint Flask asociado a serialize_time y devuelve una respuesta JSON acorde al resultado de la operacion.
+
+    Args:
+        value: Dato utilizado por la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     return value.strftime("%H:%M") if value else None
 
 
 def serialize_mark(mark):
+    """
+    Atiende el endpoint Flask asociado a serialize_mark y devuelve una respuesta JSON acorde al resultado de la operacion.
+
+    Args:
+        mark: Dato utilizado por la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     worker = mark.trabajador
     return {
         "id": mark.id,
@@ -44,6 +76,15 @@ def serialize_mark(mark):
 
 
 def build_mark_query(args):
+    """
+    Atiende el endpoint Flask asociado a build_mark_query y devuelve una respuesta JSON acorde al resultado de la operacion.
+
+    Args:
+        args: Dato utilizado por la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     query = Marcacion.query.join(Trabajador)
 
     trabajador_id = args.get("trabajador_id")
@@ -73,6 +114,15 @@ def build_mark_query(args):
 
 
 def empty_day_row(mark):
+    """
+    Atiende el endpoint Flask asociado a empty_day_row y devuelve una respuesta JSON acorde al resultado de la operacion.
+
+    Args:
+        mark: Dato utilizado por la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     worker = mark.trabajador
     return {
         "fecha": mark.fecha.isoformat(),
@@ -88,6 +138,16 @@ def empty_day_row(mark):
 
 
 def set_day_mark(row, mark):
+    """
+    Atiende el endpoint Flask asociado a set_day_mark y devuelve una respuesta JSON acorde al resultado de la operacion.
+
+    Args:
+        row: Dato utilizado por la operacion.
+        mark: Dato utilizado por la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     value = {
         "hora": serialize_time(mark.hora_real),
         "estado": mark.estado,
@@ -105,6 +165,15 @@ def set_day_mark(row, mark):
 
 
 def calculate_day_status(row):
+    """
+    Atiende el endpoint Flask asociado a calculate_day_status y devuelve una respuesta JSON acorde al resultado de la operacion.
+
+    Args:
+        row: Dato utilizado por la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     states = [
         row[key]["estado"]
         for key in ("entrada", "salida_almuerzo", "regreso_almuerzo", "salida")
@@ -122,6 +191,15 @@ def calculate_day_status(row):
 
 
 def build_day_rows(marks):
+    """
+    Atiende el endpoint Flask asociado a build_day_rows y devuelve una respuesta JSON acorde al resultado de la operacion.
+
+    Args:
+        marks: Dato utilizado por la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     rows = {}
     for mark in marks:
         key = (mark.fecha, mark.trabajador_id)
@@ -134,6 +212,15 @@ def build_day_rows(marks):
 
 
 def build_dashboard_stats(fecha):
+    """
+    Atiende el endpoint Flask asociado a build_dashboard_stats y devuelve una respuesta JSON acorde al resultado de la operacion.
+
+    Args:
+        fecha: Dato utilizado por la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     active_workers = Trabajador.query.filter_by(activo=True).all()
     active_worker_ids = {worker.id for worker in active_workers}
     marks = (
@@ -180,6 +267,12 @@ def build_dashboard_stats(fecha):
 
 @marcaciones_bp.post("/biometrica")
 def create_biometric_mark():
+    """
+    Expone la marcacion biometrica publica y traduce errores de negocio a codigos HTTP coherentes.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     data = request.get_json(silent=True) or {}
     fingerprint_id = (data.get("fingerprint_id") or "").strip().upper()
 
@@ -205,6 +298,12 @@ def create_biometric_mark():
 @admin_marcaciones_bp.get("")
 @require_admin
 def list_admin_marks():
+    """
+    Atiende el endpoint Flask asociado a list_admin_marks y devuelve una respuesta JSON acorde al resultado de la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     try:
         query = build_mark_query(request.args)
     except ValueError:
@@ -238,5 +337,11 @@ def list_admin_marks():
 @admin_marcaciones_bp.get("/dashboard")
 @require_admin
 def dashboard_stats():
+    """
+    Atiende el endpoint Flask asociado a dashboard_stats y devuelve una respuesta JSON acorde al resultado de la operacion.
+
+    Returns:
+        Resultado de la operacion o respuesta HTTP correspondiente.
+    """
     fecha = parse_date(request.args.get("fecha")) or obtener_hora_actual().date()
     return jsonify({"success": True, "data": build_dashboard_stats(fecha)})

@@ -1,8 +1,17 @@
+/**
+ * Modulo de interfaz Marcar del sistema de control de horarios.
+ * Mantiene la responsabilidad indicada sin duplicar logica de dominio del backend.
+ */
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { registrarMarcacionBiometrica } from '../services/marcacionService';
 
+/**
+ * Centraliza una decision de configuracion o la traduccion de errores para conservar una experiencia consistente.
+ *
+ * @returns {JSX.Element|Promise<unknown>|unknown} Resultado de la operacion o elemento renderizado.
+ */
 function friendlyError(requestError) {
   const code = requestError.response?.data?.code;
   if (code === 'HUELLA_NO_RECONOCIDA') {
@@ -41,11 +50,21 @@ function friendlyError(requestError) {
   return requestError.response?.data?.message ?? 'No se pudo realizar la marcacion.';
 }
 
+/**
+ * Renderiza el flujo publico de asistencia y delega la identificacion al agente biometrico configurado.
+ *
+ * @returns {JSX.Element|Promise<unknown>|unknown} Resultado de la operacion o elemento renderizado.
+ */
 export default function Marcar() {
   const [status, setStatus] = useState('idle');
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
 
+  /**
+   * Solicita identificacion biometrica y muestra el tipo y la hora de la marcacion calculada por el backend. Marcar.jsx.
+   *
+   * @returns {JSX.Element|Promise<unknown>|unknown} Resultado de la operacion o elemento renderizado.
+   */
   async function markAttendance() {
     setError('');
     setResult(null);
