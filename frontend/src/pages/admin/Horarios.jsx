@@ -23,6 +23,7 @@ const templateFormInitial = {
   hora_regreso_almuerzo: '13:45',
   hora_salida: '18:00',
   tolerancia_entrada: 0,
+  tolerancia_salida: 0,
   tolerancia_regreso_almuerzo: 0,
 };
 
@@ -36,6 +37,7 @@ const assignmentInitial = {
   hora_regreso_almuerzo: '13:45',
   hora_salida: '18:00',
   tolerancia_entrada: 0,
+  tolerancia_salida: 0,
   tolerancia_regreso_almuerzo: 0,
 };
 
@@ -189,6 +191,7 @@ export default function Horarios() {
             hora_regreso_almuerzo: assignment.hora_regreso_almuerzo,
             hora_salida: assignment.hora_salida,
             tolerancia_entrada: assignment.tolerancia_entrada,
+            tolerancia_salida: assignment.tolerancia_salida,
             tolerancia_regreso_almuerzo: assignment.tolerancia_regreso_almuerzo,
           };
 
@@ -278,9 +281,23 @@ export default function Horarios() {
                 <input
                   type="number"
                   min="0"
+                  step="1"
                   name="tolerancia_entrada"
                   value={templateForm.tolerancia_entrada}
                   onChange={handleTemplateChange}
+                  required
+                />
+              </label>
+              <label>
+                Tolerancia salida
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  name="tolerancia_salida"
+                  value={templateForm.tolerancia_salida}
+                  onChange={handleTemplateChange}
+                  required
                 />
               </label>
               <label>
@@ -288,9 +305,11 @@ export default function Horarios() {
                 <input
                   type="number"
                   min="0"
+                  step="1"
                   name="tolerancia_regreso_almuerzo"
                   value={templateForm.tolerancia_regreso_almuerzo}
                   onChange={handleTemplateChange}
+                  required
                 />
               </label>
             </div>
@@ -321,6 +340,8 @@ export default function Horarios() {
                     <th>Almuerzo</th>
                     <th>Regreso</th>
                     <th>Salida</th>
+                    <th>Tol. entrada</th>
+                    <th>Tol. salida</th>
                     <th>Estado</th>
                     <th>Acciones</th>
                   </tr>
@@ -333,6 +354,8 @@ export default function Horarios() {
                       <td>{template.hora_salida_almuerzo ?? 'Sin almuerzo'}</td>
                       <td>{template.hora_regreso_almuerzo ?? 'Sin almuerzo'}</td>
                       <td>{template.hora_salida}</td>
+                      <td>{template.tolerancia_entrada} min</td>
+                      <td>{template.tolerancia_salida} min</td>
                       <td>
                         <span className={template.activo ? 'status active' : 'status inactive'}>
                           {template.activo ? 'Activa' : 'Inactiva'}
@@ -466,9 +489,23 @@ export default function Horarios() {
                   <input
                     type="number"
                     min="0"
+                    step="1"
                     name="tolerancia_entrada"
                     value={assignment.tolerancia_entrada}
                     onChange={handleAssignmentChange}
+                    required
+                  />
+                </label>
+                <label>
+                  Tolerancia salida
+                  <input
+                    type="number"
+                    min="0"
+                    step="1"
+                    name="tolerancia_salida"
+                    value={assignment.tolerancia_salida}
+                    onChange={handleAssignmentChange}
+                    required
                   />
                 </label>
                 <label>
@@ -476,9 +513,11 @@ export default function Horarios() {
                   <input
                     type="number"
                     min="0"
+                    step="1"
                     name="tolerancia_regreso_almuerzo"
                     value={assignment.tolerancia_regreso_almuerzo}
                     onChange={handleAssignmentChange}
+                    required
                   />
                 </label>
               </div>
@@ -502,6 +541,8 @@ export default function Horarios() {
                   <th>Almuerzo</th>
                   <th>Regreso</th>
                   <th>Salida</th>
+                  <th>Tol. entrada</th>
+                  <th>Tol. salida</th>
                   <th>Estado</th>
                 </tr>
               </thead>
@@ -515,6 +556,8 @@ export default function Horarios() {
                     <td>{schedule.hora_salida_almuerzo ?? 'Sin almuerzo'}</td>
                     <td>{schedule.hora_regreso_almuerzo ?? 'Sin almuerzo'}</td>
                     <td>{schedule.hora_salida}</td>
+                    <td>{schedule.tolerancia_entrada} min</td>
+                    <td>{schedule.tolerancia_salida} min</td>
                     <td>
                       <span className={schedule.activo ? 'status active' : 'status inactive'}>
                         {schedule.activo ? 'Activo' : 'Histórico'}

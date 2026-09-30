@@ -421,6 +421,10 @@ def calcular_estado(tipo_marcacion, hora_real, hora_programada, horario):
     Utilizado desde:
         Motor de puntualidad.
 
+    Para la salida final, la tolerancia se resta de la hora programada para
+    definir el limite permitido. Si se cruza ese limite, conserva los minutos
+    reales de adelanto respecto de la hora programada al registrar el estado.
+
     Retorna:
         Tupla (estado, minutos_diferencia).
     """
@@ -444,7 +448,9 @@ def calcular_estado(tipo_marcacion, hora_real, hora_programada, horario):
         return ESTADO_TARDANZA, diferencia - limite
 
     if tipo_marcacion == TIPO_SALIDA:
-        if diferencia < 0:
+        # El margen de salida se mide hacia atras desde la hora programada.
+        limite = horario.tolerancia_salida or 0
+        if diferencia < -limite:
             return ESTADO_SALIDA_ANTICIPADA, abs(diferencia)
         return ESTADO_A_TIEMPO, 0
 

@@ -56,6 +56,7 @@ def test_template_crud_and_deactivate():
             "hora_regreso_almuerzo": "14:45",
             "hora_salida": "18:00",
             "tolerancia_entrada": 5,
+            "tolerancia_salida": 10,
             "tolerancia_regreso_almuerzo": 3,
         },
     )
@@ -71,6 +72,7 @@ def test_template_crud_and_deactivate():
 
     assert create_response.status_code == 201
     assert update_response.get_json()["data"]["plantilla"]["hora_entrada"] == "09:15"
+    assert update_response.get_json()["data"]["plantilla"]["tolerancia_salida"] == 10
     assert deactivate_response.get_json()["data"]["plantilla"]["activo"] is False
 
 
@@ -86,6 +88,7 @@ def test_assign_independent_worker_schedules_and_history():
             "hora_regreso_almuerzo": "13:45",
             "hora_salida": "18:00",
             "tolerancia_entrada": 0,
+            "tolerancia_salida": 10,
             "tolerancia_regreso_almuerzo": 0,
         },
     )
@@ -108,6 +111,7 @@ def test_assign_independent_worker_schedules_and_history():
             "hora_regreso_almuerzo": "14:45",
             "hora_salida": "18:00",
             "tolerancia_entrada": 0,
+            "tolerancia_salida": 5,
             "tolerancia_regreso_almuerzo": 0,
         },
     )
@@ -120,6 +124,7 @@ def test_assign_independent_worker_schedules_and_history():
             "hora_regreso_almuerzo": "14:45",
             "hora_salida": "18:00",
             "tolerancia_entrada": 0,
+            "tolerancia_salida": 0,
             "tolerancia_regreso_almuerzo": 0,
         },
     )
@@ -127,7 +132,9 @@ def test_assign_independent_worker_schedules_and_history():
     current_b = client.get(f"/api/admin/horarios/trabajadores/{worker_b_id}/actual")
 
     assert assign_a.status_code == 201
+    assert assign_a.get_json()["data"]["horario"]["tolerancia_salida"] == 10
     assert assign_b.get_json()["data"]["horario"]["hora_entrada"] == "09:00"
+    assert assign_b.get_json()["data"]["horario"]["tolerancia_salida"] == 5
     assert reassign_a.status_code == 201
     assert len(history_a.get_json()["data"]["historial"]) == 2
     assert current_b.get_json()["data"]["horario"]["hora_entrada"] == "09:00"
@@ -139,3 +146,40 @@ def test_assign_independent_worker_schedules_and_history():
             .first()
         )
         assert old_a.fecha_fin == date(2026, 8, 31)
+
+
+def test_exit_tolerance_rejects_negative_and_decimal_values():
+    _, client = build_authenticated_client()
+
+    response = client.post(
+        "/api/admin/horarios/plantillas",
+        json={
+            "nombre": "Horario invalido",
+            "hora_entrada": "08:00",
+            "hora_salida": "17:00",
+            "tolerancia_entrada": 0,
+            "tolerancia_salida": -1,
+            "tolerancia_regreso_almuerzo": 0,
+        },
+    )
+
+    assert response.status_code == 400
+    assert response.get_json()["errors"]["tolerancia_salida"] == "No puede ser negativa."
+
+    decimal_response = client.post(
+        "/api/admin/horarios/plantillas",
+        json={
+            "nombre": "Horario decimal",
+            "hora_entrada": "08:00",
+            "hora_salida": "17:00",
+            "tolerancia_entrada": 0,
+            "tolerancia_salida": 1.5,
+            "tolerancia_regreso_almuerzo": 0,
+        },
+    )
+
+    assert decimal_response.status_code == 400
+    assert (
+        decimal_response.get_json()["errors"]["tolerancia_salida"]
+        == "Debe ser un numero entero igual o mayor que cero."
+    )

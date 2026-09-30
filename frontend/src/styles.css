@@ -23,7 +23,6 @@ a {
   color: inherit;
 }
 
-.home-page,
 .page {
   align-items: center;
   display: flex;
@@ -32,14 +31,9 @@ a {
   padding: 24px;
 }
 
-.entry-panel,
 .content-panel {
   max-width: 760px;
   width: 100%;
-}
-
-.entry-panel {
-  text-align: center;
 }
 
 .content-panel {
@@ -64,36 +58,6 @@ h1 {
   line-height: 1.05;
   margin: 0 0 28px;
   overflow-wrap: anywhere;
-}
-
-.entry-actions {
-  display: grid;
-  gap: 16px;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.entry-button {
-  align-items: center;
-  border-radius: 8px;
-  display: flex;
-  font-size: 1.25rem;
-  font-weight: 800;
-  justify-content: center;
-  min-height: 112px;
-  padding: 24px;
-  text-decoration: none;
-  text-transform: uppercase;
-  width: 100%;
-}
-
-.entry-button.admin {
-  background: #173d2b;
-  color: #ffffff;
-}
-
-.entry-button.worker {
-  background: #f2bd42;
-  color: #1e2417;
 }
 
 .muted {
@@ -394,6 +358,7 @@ th {
   justify-content: center;
   min-height: 100vh;
   padding: 24px;
+  position: relative;
 }
 
 .mark-shell {
@@ -699,7 +664,6 @@ th {
 }
 
 @media (max-width: 720px) {
-  .home-page,
   .page {
     padding: 18px;
   }
@@ -708,10 +672,6 @@ th {
     font-size: 1.85rem;
     line-height: 1.12;
     margin-bottom: 20px;
-  }
-
-  .entry-actions {
-    grid-template-columns: 1fr;
   }
 
   .mark-page {
@@ -730,10 +690,6 @@ th {
   .mark-button {
     min-height: 72px;
     padding: 14px;
-  }
-
-  .entry-button {
-    min-height: 88px;
   }
 
   .content-panel {
@@ -803,7 +759,6 @@ th {
 }
 
 @media (max-width: 380px) {
-  .home-page,
   .page,
   .admin-page,
   .mark-page {
@@ -821,25 +776,14 @@ th {
   }
 }
 
-/* Acceso público centrado: la administración permanece disponible sin competir con la marcación. */
-.home-page {
-  position: relative;
-}
-
-.home-entry-panel {
-  max-width: 480px;
-}
-
-.home-mark-button {
-  box-shadow: 0 12px 26px rgba(119, 87, 18, 0.18);
-  min-height: 124px;
-}
-
-.admin-access-icon {
+/* El reloj mantiene el acceso administrativo disponible sin competir con la marcación. */
+.mark-admin-access-icon {
   align-items: center;
+  background: transparent;
   border: 1px solid transparent;
   border-radius: 8px;
   color: #173d2b;
+  cursor: pointer;
   display: inline-flex;
   height: 48px;
   justify-content: center;
@@ -849,36 +793,36 @@ th {
   width: 48px;
 }
 
-.admin-access-icon:hover {
+.mark-admin-access-icon:hover {
   background: #e6eee6;
 }
 
-.admin-access-icon:focus-visible {
+.mark-admin-access-icon:focus-visible {
   background: #ffffff;
   border-color: #173d2b;
   box-shadow: 0 0 0 3px rgba(23, 61, 43, 0.22);
   outline: 0;
 }
 
-.admin-access-icon svg {
-  fill: currentColor;
+.mark-admin-access-icon svg {
+  fill: none;
   height: 25px;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
   width: 25px;
 }
 
 @media (max-width: 720px) {
-  .admin-access-icon {
+  .mark-admin-access-icon {
     right: 18px;
     top: 18px;
-  }
-
-  .home-mark-button {
-    min-height: 112px;
   }
 }
 
 @media (max-width: 380px) {
-  .admin-access-icon {
+  .mark-admin-access-icon {
     right: 12px;
     top: 12px;
   }

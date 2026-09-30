@@ -143,13 +143,19 @@ X-Agent-Token: <BIOMETRIC_AGENT_TOKEN>
 
 ## Navegacion inicial
 
-La pantalla inicial presenta un unico boton principal MARCAR para trabajadores.
-El acceso administrativo se realiza desde el icono de usuario ubicado en la esquina superior derecha.
+La ruta raiz del sistema corresponde directamente a la pantalla publica de marcacion.
+El acceso administrativo se realiza mediante el icono de reloj de la esquina superior derecha.
 
-- /: Inicio.
-- /marcar: Marcacion biometrica automatica.
+- /: Marcacion biometrica automatica.
+- /marcar: Alias de la misma pantalla de marcacion.
 - /admin/login: Inicio de sesion administrativo.
 - /admin: Panel administrativo protegido.
+
+## Tolerancias de horario
+
+La tolerancia de entrada representa los minutos posteriores a la hora programada permitidos antes de clasificar una marcacion como tardanza. Por ejemplo, para una entrada a las 08:00 con tolerancia de 10 minutos, hasta 08:10 se considera dentro de tolerancia y desde 08:11 se registra tardanza.
+
+La tolerancia de salida representa los minutos anteriores a la hora programada permitidos antes de clasificar la salida final como anticipada. Por ejemplo, para una salida a las 17:00 con tolerancia de 10 minutos, antes de 16:50 se registra SALIDA_ANTICIPADA; desde 16:50 se considera dentro del margen permitido. La salida siempre se guarda: la tolerancia solo determina su estado.
 
 ## Agente local
 

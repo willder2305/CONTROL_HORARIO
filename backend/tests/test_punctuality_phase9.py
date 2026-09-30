@@ -28,7 +28,13 @@ class TestConfig:
     TESTING = True
 
 
-def build_worker_with_schedule():
+def build_worker_with_schedule(
+    hora_salida=time(18, 0),
+    tolerancia_entrada=0,
+    tolerancia_salida=0,
+    con_almuerzo=True,
+):
+    """Crea un horario de prueba configurable para verificar puntualidad sin depender de MySQL."""
     app = create_app(TestConfig)
     with app.app_context():
         db.create_all()
@@ -38,10 +44,11 @@ def build_worker_with_schedule():
         schedule = HorarioTrabajador(
             trabajador_id=worker.id,
             hora_entrada=time(8, 0),
-            hora_salida_almuerzo=time(12, 45),
-            hora_regreso_almuerzo=time(13, 45),
-            hora_salida=time(18, 0),
-            tolerancia_entrada=0,
+            hora_salida_almuerzo=time(12, 45) if con_almuerzo else None,
+            hora_regreso_almuerzo=time(13, 45) if con_almuerzo else None,
+            hora_salida=hora_salida,
+            tolerancia_entrada=tolerancia_entrada,
+            tolerancia_salida=tolerancia_salida,
             tolerancia_regreso_almuerzo=0,
             fecha_inicio=date(2026, 8, 1),
             activo=True,
@@ -109,6 +116,111 @@ def test_exit_1735_for_1800_is_25_minutes_early():
 
     assert result["estado"] == ESTADO_SALIDA_ANTICIPADA
     assert result["minutos_diferencia"] == 25
+
+
+def test_exit_before_tolerance_is_early_with_the_real_advance_minutes():
+    app, worker_id = build_worker_with_schedule(
+        hora_salida=time(17, 0),
+        tolerancia_salida=10,
+    )
+    with app.app_context():
+        result = preparar_datos_puntualidad(
+            worker_id,
+            TIPO_SALIDA,
+            datetime(2026, 8, 20, 16, 49),
+        )
+
+    assert result["estado"] == ESTADO_SALIDA_ANTICIPADA
+    assert result["minutos_diferencia"] == 11
+
+
+def test_exit_at_tolerance_limit_is_on_time():
+    app, worker_id = build_worker_with_schedule(
+        hora_salida=time(17, 0),
+        tolerancia_salida=10,
+    )
+    with app.app_context():
+        result = preparar_datos_puntualidad(
+            worker_id,
+            TIPO_SALIDA,
+            datetime(2026, 8, 20, 16, 50),
+        )
+
+    assert result["estado"] == ESTADO_A_TIEMPO
+    assert result["minutos_diferencia"] == 0
+
+
+def test_exit_within_tolerance_at_schedule_and_after_schedule_are_on_time():
+    app, worker_id = build_worker_with_schedule(
+        hora_salida=time(17, 0),
+        tolerancia_salida=10,
+    )
+    with app.app_context():
+        for actual_time in (time(16, 55), time(17, 0), time(17, 30)):
+            estado, minutos_diferencia = calcular_estado(
+                TIPO_SALIDA,
+                actual_time,
+                time(17, 0),
+                db.session.get(HorarioTrabajador, 1),
+            )
+            assert estado == ESTADO_A_TIEMPO
+            assert minutos_diferencia == 0
+
+
+def test_exit_with_zero_tolerance_is_early_only_before_the_scheduled_time():
+    app, worker_id = build_worker_with_schedule(hora_salida=time(17, 0))
+    with app.app_context():
+        early_result = preparar_datos_puntualidad(
+            worker_id,
+            TIPO_SALIDA,
+            datetime(2026, 8, 20, 16, 59),
+        )
+        on_time_result = preparar_datos_puntualidad(
+            worker_id,
+            TIPO_SALIDA,
+            datetime(2026, 8, 20, 17, 0),
+        )
+
+    assert early_result["estado"] == ESTADO_SALIDA_ANTICIPADA
+    assert early_result["minutos_diferencia"] == 1
+    assert on_time_result["estado"] == ESTADO_A_TIEMPO
+    assert on_time_result["minutos_diferencia"] == 0
+
+
+def test_exit_tolerance_applies_to_a_schedule_without_lunch():
+    app, worker_id = build_worker_with_schedule(
+        hora_salida=time(17, 0),
+        tolerancia_salida=10,
+        con_almuerzo=False,
+    )
+    with app.app_context():
+        result = preparar_datos_puntualidad(
+            worker_id,
+            TIPO_SALIDA,
+            datetime(2026, 8, 20, 16, 49),
+        )
+
+    assert result["estado"] == ESTADO_SALIDA_ANTICIPADA
+
+
+def test_entry_tolerance_regression_keeps_0810_on_time_and_0811_late():
+    app, worker_id = build_worker_with_schedule(tolerancia_entrada=10)
+    with app.app_context():
+        on_time_result = preparar_datos_puntualidad(
+            worker_id,
+            TIPO_ENTRADA,
+            datetime(2026, 8, 20, 8, 10),
+        )
+        late_result = preparar_datos_puntualidad(
+            worker_id,
+            TIPO_ENTRADA,
+            datetime(2026, 8, 20, 8, 11),
+        )
+
+    assert on_time_result["estado"] == ESTADO_A_TIEMPO
+    assert on_time_result["minutos_diferencia"] == 0
+    assert late_result["estado"] == ESTADO_TARDANZA
+    assert late_result["minutos_diferencia"] == 1
 
 
 def test_react_cannot_override_backend_time_payload_shape():

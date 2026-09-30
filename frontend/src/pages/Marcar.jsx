@@ -3,7 +3,7 @@
  * Mantiene la responsabilidad indicada sin duplicar logica de dominio del backend.
  */
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 import { registrarMarcacionBiometrica } from '../services/marcacionService';
 
@@ -47,6 +47,7 @@ function friendlyError(requestError) {
  * @returns {JSX.Element|Promise<unknown>|unknown} Resultado de la operacion o elemento renderizado.
  */
 export default function Marcar() {
+  const navigate = useNavigate();
   const [status, setStatus] = useState('idle');
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
@@ -76,10 +77,29 @@ export default function Marcar() {
     }
   }
 
+  /**
+   * Abre el inicio de sesion administrativo desde el acceso de reloj de la vista publica.
+   */
+  function openAdministrativeAccess() {
+    navigate('/admin/login');
+  }
+
   const isReading = status === 'reading';
 
   return (
     <main className="mark-page">
+      <button
+        aria-label="Acceso administrativo"
+        className="mark-admin-access-icon"
+        onClick={openAdministrativeAccess}
+        title="Acceso administrativo"
+        type="button"
+      >
+        <svg aria-hidden="true" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="8.5" />
+          <path d="M12 7.5v5l3.25 2" />
+        </svg>
+      </button>
       <section className="mark-shell compact-mark-shell">
         <header className="mark-header">
           <h1>Control de asistencia</h1>
@@ -116,10 +136,6 @@ export default function Marcar() {
             </div>
           )}
         </section>
-
-        <Link className="secondary-link" to="/">
-          Volver
-        </Link>
       </section>
     </main>
   );

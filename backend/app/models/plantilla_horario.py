@@ -22,6 +22,7 @@ class PlantillaHorario(db.Model):
     hora_regreso_almuerzo = db.Column(db.Time, nullable=True)
     hora_salida = db.Column(db.Time, nullable=False)
     tolerancia_entrada = db.Column(db.Integer, nullable=False, default=0)
+    tolerancia_salida = db.Column(db.Integer, nullable=False, default=0)
     tolerancia_regreso_almuerzo = db.Column(db.Integer, nullable=False, default=0)
     activo = db.Column(db.Boolean, nullable=False, default=True)
     created_at = db.Column(db.DateTime, nullable=False, default=obtener_hora_actual)

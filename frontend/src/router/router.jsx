@@ -4,7 +4,6 @@
  */
 import { createBrowserRouter } from 'react-router-dom';
 
-import Home from '../pages/Home.jsx';
 import Marcar from '../pages/Marcar.jsx';
 import ProtectedRoute from '../components/ProtectedRoute.jsx';
 import Configuracion from '../pages/admin/Configuracion.jsx';
@@ -18,7 +17,7 @@ import Trabajadores from '../pages/admin/Trabajadores.jsx';
 const router = createBrowserRouter([
   {
     path: '/',
-    element: <Home />,
+    element: <Marcar />,
   },
   {
     path: '/admin/login',

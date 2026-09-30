@@ -33,6 +33,7 @@ class HorarioTrabajador(db.Model):
     hora_regreso_almuerzo = db.Column(db.Time, nullable=True)
     hora_salida = db.Column(db.Time, nullable=False)
     tolerancia_entrada = db.Column(db.Integer, nullable=False, default=0)
+    tolerancia_salida = db.Column(db.Integer, nullable=False, default=0)
     tolerancia_regreso_almuerzo = db.Column(db.Integer, nullable=False, default=0)
     fecha_inicio = db.Column(db.Date, nullable=False, index=True)
     fecha_fin = db.Column(db.Date, nullable=True, index=True)
