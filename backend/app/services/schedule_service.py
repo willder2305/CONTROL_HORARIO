@@ -48,6 +48,26 @@ def parse_optional_time(value, field_name, errors):
     return parse_time(value, field_name, errors)
 
 
+def parse_non_negative_integer(value, field_name, errors):
+    """Normaliza una tolerancia en minutos y rechaza texto, decimales o valores negativos."""
+    if value in (None, ""):
+        return 0
+    if isinstance(value, bool) or (
+        isinstance(value, float) and not value.is_integer()
+    ):
+        errors[field_name] = "Debe ser un numero entero igual o mayor que cero."
+        return 0
+    try:
+        parsed_value = int(value)
+    except (TypeError, ValueError):
+        errors[field_name] = "Debe ser un numero entero igual o mayor que cero."
+        return 0
+    if parsed_value < 0:
+        errors[field_name] = "No puede ser negativa."
+        return 0
+    return parsed_value
+
+
 def parse_date(value, field_name, errors):
     """
     Valida y transforma datos externos al tipo de dominio esperado, informando errores de formato cuando corresponde.
@@ -114,6 +134,7 @@ def serialize_template(template):
         "hora_regreso_almuerzo": serialize_time(template.hora_regreso_almuerzo),
         "hora_salida": serialize_time(template.hora_salida),
         "tolerancia_entrada": template.tolerancia_entrada,
+        "tolerancia_salida": template.tolerancia_salida,
         "tolerancia_regreso_almuerzo": template.tolerancia_regreso_almuerzo,
         "activo": template.activo,
     }
@@ -140,6 +161,7 @@ def serialize_worker_schedule(schedule):
         "hora_regreso_almuerzo": serialize_time(schedule.hora_regreso_almuerzo),
         "hora_salida": serialize_time(schedule.hora_salida),
         "tolerancia_entrada": schedule.tolerancia_entrada,
+        "tolerancia_salida": schedule.tolerancia_salida,
         "tolerancia_regreso_almuerzo": schedule.tolerancia_regreso_almuerzo,
         "fecha_inicio": serialize_date(schedule.fecha_inicio),
         "fecha_fin": serialize_date(schedule.fecha_fin),
@@ -175,17 +197,20 @@ def build_template_payload(data):
             errors,
         ),
         "hora_salida": parse_time(data.get("hora_salida"), "hora_salida", errors),
-        "tolerancia_entrada": int(data.get("tolerancia_entrada") or 0),
-        "tolerancia_regreso_almuerzo": int(
-            data.get("tolerancia_regreso_almuerzo") or 0
+        "tolerancia_entrada": parse_non_negative_integer(
+            data.get("tolerancia_entrada"), "tolerancia_entrada", errors
+        ),
+        "tolerancia_salida": parse_non_negative_integer(
+            data.get("tolerancia_salida"), "tolerancia_salida", errors
+        ),
+        "tolerancia_regreso_almuerzo": parse_non_negative_integer(
+            data.get("tolerancia_regreso_almuerzo"),
+            "tolerancia_regreso_almuerzo",
+            errors,
         ),
     }
     if not payload["nombre"]:
         errors["nombre"] = "El nombre es obligatorio."
-    if payload["tolerancia_entrada"] < 0:
-        errors["tolerancia_entrada"] = "No puede ser negativa."
-    if payload["tolerancia_regreso_almuerzo"] < 0:
-        errors["tolerancia_regreso_almuerzo"] = "No puede ser negativa."
     if bool(payload["hora_salida_almuerzo"]) != bool(payload["hora_regreso_almuerzo"]):
         errors["almuerzo"] = "Configure ambas horas de almuerzo o deje ambas vacias."
     return payload, errors
@@ -220,6 +245,7 @@ def schedule_payload_from_assignment(data):
             "hora_regreso_almuerzo": template.hora_regreso_almuerzo,
             "hora_salida": template.hora_salida,
             "tolerancia_entrada": template.tolerancia_entrada,
+            "tolerancia_salida": template.tolerancia_salida,
             "tolerancia_regreso_almuerzo": template.tolerancia_regreso_almuerzo,
             "fecha_inicio": fecha_inicio,
         }
@@ -238,17 +264,20 @@ def schedule_payload_from_assignment(data):
                 errors,
             ),
             "hora_salida": parse_time(data.get("hora_salida"), "hora_salida", errors),
-            "tolerancia_entrada": int(data.get("tolerancia_entrada") or 0),
-            "tolerancia_regreso_almuerzo": int(
-                data.get("tolerancia_regreso_almuerzo") or 0
+            "tolerancia_entrada": parse_non_negative_integer(
+                data.get("tolerancia_entrada"), "tolerancia_entrada", errors
+            ),
+            "tolerancia_salida": parse_non_negative_integer(
+                data.get("tolerancia_salida"), "tolerancia_salida", errors
+            ),
+            "tolerancia_regreso_almuerzo": parse_non_negative_integer(
+                data.get("tolerancia_regreso_almuerzo"),
+                "tolerancia_regreso_almuerzo",
+                errors,
             ),
             "fecha_inicio": fecha_inicio,
         }
 
-    if payload.get("tolerancia_entrada", 0) < 0:
-        errors["tolerancia_entrada"] = "No puede ser negativa."
-    if payload.get("tolerancia_regreso_almuerzo", 0) < 0:
-        errors["tolerancia_regreso_almuerzo"] = "No puede ser negativa."
     if bool(payload.get("hora_salida_almuerzo")) != bool(payload.get("hora_regreso_almuerzo")):
         errors["almuerzo"] = "Configure ambas horas de almuerzo o deje ambas vacias."
 

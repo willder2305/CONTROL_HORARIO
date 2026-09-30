@@ -89,6 +89,7 @@ def seed_schedules_command():
             "hora_regreso_almuerzo": time(13, 45),
             "hora_salida": time(18, 0),
             "tolerancia_entrada": 0,
+            "tolerancia_salida": 0,
             "tolerancia_regreso_almuerzo": 0,
         },
         {
@@ -98,6 +99,7 @@ def seed_schedules_command():
             "hora_regreso_almuerzo": time(14, 45),
             "hora_salida": time(18, 0),
             "tolerancia_entrada": 0,
+            "tolerancia_salida": 0,
             "tolerancia_regreso_almuerzo": 0,
         },
     ]
