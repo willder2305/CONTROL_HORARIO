@@ -158,6 +158,16 @@ namespace ControlHorarioBiometricAgent
                 return result;
             }
 
+            var enumerable = value as IEnumerable;
+            if (enumerable != null && !(value is string))
+            {
+                foreach (var item in enumerable)
+                {
+                    if (item != null) result.Add(Convert.ToString(item));
+                }
+                return result;
+            }
+
             var text = Convert.ToString(value);
             foreach (var part in text.Split(','))
             {
