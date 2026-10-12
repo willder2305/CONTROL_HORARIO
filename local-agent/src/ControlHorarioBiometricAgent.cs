@@ -40,7 +40,7 @@ namespace ControlHorarioBiometricAgent
     /// </summary>
     internal static class Program
     {
-        private const string AgentVersion = "1.0.2";
+        private const string AgentVersion = "1.0.3";
         private static readonly JavaScriptSerializer Json = new JavaScriptSerializer();
         private static AgentConfig Config;
 
@@ -430,7 +430,14 @@ namespace ControlHorarioBiometricAgent
         /// </summary>
         private static string ServerRequest(string method, string path, string body, out int statusCode)
         {
-            var request = (HttpWebRequest)WebRequest.Create(Config.ServerUrl.TrimEnd('/') + path);
+            var uri = new Uri(Config.ServerUrl.TrimEnd('/') + path);
+            if (String.Equals(uri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase))
+            {
+                // TLS 1.2 expressed numerically so the agent remains compilable with .NET Framework 4.
+                ServicePointManager.SecurityProtocol = (SecurityProtocolType)3072;
+            }
+
+            var request = (HttpWebRequest)WebRequest.Create(uri);
             request.Method = method;
             request.Accept = "application/json";
             request.ContentType = "application/json";
