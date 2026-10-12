@@ -4,22 +4,29 @@ Agente local para computadoras con lector ZKTeco ZK9500 conectado por USB.
 
 Responsabilidad del agente:
 
-- Escuchar solo en http://127.0.0.1:8765.
+- Escuchar solo en `http://127.0.0.1:8765`.
 - Capturar huellas con el SDK/driver ZKTeco instalado en Windows.
-- Descargar del backend los templates activos usando X-Agent-Token.
+- Descargar del backend los templates activos usando `X-Agent-Token`.
 - Identificar localmente contra el ZK9500.
-- Enviar al backend solo el huella_id identificado para registrar la marcacion.
+- Enviar al backend solo el `huella_id` identificado para registrar la marcacion.
 
-## Archivos de configuracion
+## Configuracion de instalacion
 
-Copiar ppsettings.example.json como ppsettings.json y ajustar:
+El instalador preparado para un servidor hospedado deja la configuracion privada en:
 
-- ServerUrl: dominio HTTPS del sistema hospedado.
-- AllowedOrigins: dominio del frontend hospedado.
-- DeviceToken: mismo valor que BIOMETRIC_AGENT_TOKEN en el backend.
-- BridgePath: ruta a Zk9500Bridge.exe con las DLL del SDK.
+`C:\ProgramData\ControlHorarioBiometricAgent\appsettings.json`
 
-No subir ppsettings.json a Git.
+El archivo contiene el dominio, los origenes permitidos, el identificador del dispositivo y el token del agente. No debe subirse a Git, copiarse a equipos no autorizados ni compartirse.
+
+Para preparar un instalador de una estacion concreta, usar:
+
+```powershell
+.\local-agent\scripts\build-installer.ps1 -ConfigPath 'C:\ProgramData\ControlHorarioBiometricAgent\appsettings.json'
+```
+
+El script compila el agente x86, incorpora el bridge ZK9500 con sus DLL requeridas y genera:
+
+`output\biometric-agent\ControlHorarioBiometricAgent-Setup.exe`
 
 ## Endpoints locales
 
@@ -30,26 +37,23 @@ No subir ppsettings.json a Git.
 
 El navegador del punto de marcaje llama al agente local. El agente llama al backend hospedado.
 
-## INSTALACION DEL EQUIPO DE MARCAJE
+## Instalacion del equipo de marcaje
 
 Para la computadora donde estara conectado el ZKTeco ZK9500:
 
-1. Instalar el driver oficial de ZKTeco.
-2. Instalar el runtime o SDK oficial ZKFinger si el driver no lo incluye.
-3. Ejecutar `ControlHorarioBiometricAgent-Setup.exe`.
-4. Seguir el asistente de instalacion.
-5. Finalizar la instalacion.
-6. Conectar el lector ZK9500 por USB.
-7. Verificar que Windows detecte el dispositivo.
-8. Abrir el dominio del sistema en Chrome o Edge.
-9. Entrar a MARCAR y presionar MARCAR.
+1. Instalar el driver oficial del ZK9500 incluido con ZKFinger SDK for Windows.
+2. Conectar el lector ZK9500 por USB y comprobar que Windows lo reconoce.
+3. Ejecutar `ControlHorarioBiometricAgent-Setup.exe` como administrador.
+4. Finalizar el asistente. El agente queda iniciado y se inicia automaticamente al entrar en Windows.
+5. Abrir el dominio del sistema en Chrome o Edge, entrar a MARCAR y presionar MARCAR.
 
 El usuario final no necesita abrir CMD, PowerShell, Visual Studio, Python, Node.js, XAMPP, MySQL, Git ni codigo fuente.
 
 El instalador:
 
 - instala en `C:\Program Files (x86)\ControlHorarioBiometricAgent\` porque el bridge y las DLL verificadas son x86;
-- registra inicio automatico con una tarea programada de usuario al iniciar sesion;
+- incluye `Zk9500Bridge.exe` y sus DLL de ejecucion requeridas;
+- registra inicio automatico en Windows para cada inicio de sesion;
 - inicia el agente en segundo plano;
 - no deja consola negra abierta;
 - crea desinstalador en Aplicaciones instaladas de Windows;
@@ -59,7 +63,7 @@ Configuracion editable sin recompilar:
 
 `C:\ProgramData\ControlHorarioBiometricAgent\appsettings.json`
 
-Ajustar ahi:
+Solo personal autorizado debe modificar:
 
 - `ServerUrl`
 - `AllowedOrigins`
@@ -71,4 +75,4 @@ Logs:
 
 No se deben registrar templates biometricos, huellas, tokens ni credenciales.
 
-Nota sobre ZKTeco: no se encontro una licencia local clara que autorice redistribuir las DLL oficiales del SDK. Por eso el instalador no debe presentarse como reemplazo del driver/runtime oficial. Si `/device/status` indica que SDK o lector no estan disponibles, instalar el paquete oficial de ZKTeco y reconectar el ZK9500.
+El instalador no sustituye el driver USB oficial de ZKTeco. Si `/device/status` indica que SDK o lector no estan disponibles, reinstalar el paquete oficial de ZKTeco y reconectar el ZK9500.

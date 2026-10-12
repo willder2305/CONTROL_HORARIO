@@ -19,7 +19,7 @@ namespace ControlHorarioBiometricAgent
         public string ServerUrl = "http://127.0.0.1:5000";
         public string DeviceId = "ZK9500-LOCAL-01";
         public string DeviceToken = "";
-        public string BridgePath = @"..\..\backend\zk9500_bridge\bin\Zk9500Bridge.exe";
+        public string BridgePath = @"bridge\Zk9500Bridge.exe";
         public int CaptureTimeoutSeconds = 30;
         public List<string> AllowedOrigins = new List<string>();
     }
@@ -40,6 +40,7 @@ namespace ControlHorarioBiometricAgent
     /// </summary>
     internal static class Program
     {
+        private const string AgentVersion = "1.0.2";
         private static readonly JavaScriptSerializer Json = new JavaScriptSerializer();
         private static AgentConfig Config;
 
@@ -77,21 +78,31 @@ namespace ControlHorarioBiometricAgent
         }
 
         /// <summary>
-        /// Carga appsettings.json o su ejemplo y aplica valores predeterminados seguros para ejecucion local.
+        /// Carga primero la configuracion protegida de ProgramData y conserva los archivos de ejemplo solo para desarrollo.
         /// </summary>
         private static AgentConfig LoadConfig()
         {
             var config = new AgentConfig();
             var baseDir = AppDomain.CurrentDomain.BaseDirectory;
-            var configPath = Path.Combine(baseDir, "appsettings.json");
-            if (!File.Exists(configPath))
+            var programDataConfig = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+                "ControlHorarioBiometricAgent",
+                "appsettings.json"
+            );
+            var localConfig = Path.Combine(baseDir, "appsettings.json");
+            var parentExample = Path.GetFullPath(Path.Combine(baseDir, "..", "appsettings.example.json"));
+            var localExample = Path.Combine(baseDir, "appsettings.example.json");
+            var configPath = "";
+
+            foreach (var candidate in new[] { programDataConfig, localConfig, localExample, parentExample })
             {
-                var parentExample = Path.GetFullPath(Path.Combine(baseDir, "..", "appsettings.example.json"));
-                var localExample = Path.Combine(baseDir, "appsettings.example.json");
-                if (File.Exists(localExample)) configPath = localExample;
-                else if (File.Exists(parentExample)) configPath = parentExample;
-                else return config;
+                if (File.Exists(candidate))
+                {
+                    configPath = candidate;
+                    break;
+                }
             }
+            if (String.IsNullOrWhiteSpace(configPath)) return config;
 
             var parsed = Json.DeserializeObject(File.ReadAllText(configPath)) as Dictionary<string, object>;
             if (parsed == null) return config;
@@ -103,6 +114,7 @@ namespace ControlHorarioBiometricAgent
             config.BridgePath = GetString(parsed, "BridgePath", config.BridgePath);
             config.CaptureTimeoutSeconds = GetInt(parsed, "CaptureTimeoutSeconds", config.CaptureTimeoutSeconds);
             config.AllowedOrigins = GetStringList(parsed, "AllowedOrigins");
+            Log("Configuracion cargada desde " + configPath);
             return config;
         }
 
@@ -189,12 +201,12 @@ namespace ControlHorarioBiometricAgent
                     {
                         { "success", true },
                         { "service", "running" },
-                        { "version", "1.0.0" },
+                        { "version", AgentVersion },
                         { "data", new Dictionary<string, object> {
                             { "service", "ControlHorarioBiometricAgent" },
                             { "status", "running" },
                             { "deviceId", Config.DeviceId },
-                            { "version", "1.0.0" }
+                            { "version", AgentVersion }
                         }}
                     });
                     return;
