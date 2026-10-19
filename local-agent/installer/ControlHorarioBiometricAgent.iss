@@ -1,7 +1,7 @@
 ; Instalador Inno Setup del agente biometrico local.
 ; El script requiere que build-installer.ps1 prepare local-agent\runtime\appsettings.json fuera del control de versiones.
 #define MyAppName "Control Horario Biometric Agent"
-#define MyAppVersion "1.0.4"
+#define MyAppVersion "1.0.5"
 #define MyAppPublisher "Control Horario"
 #define MyAppExeName "ControlHorarioBiometricAgent.exe"
 
@@ -48,6 +48,15 @@ Root: HKLM; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: 
 Filename: "{app}\{#MyAppExeName}"; Flags: nowait runhidden postinstall skipifsilent
 
 [Code]
+function PrepareToInstall(var NeedsRestart: Boolean): String;
+var
+  ResultCode: Integer;
+begin
+  { Detiene una instancia previa antes de reemplazar ejecutables y DLL del agente. }
+  Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /IM "ControlHorarioBiometricAgent.exe"', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  Result := '';
+end;
+
 procedure CurStepChanged(CurStep: TSetupStep);
 var
   ResultCode: Integer;

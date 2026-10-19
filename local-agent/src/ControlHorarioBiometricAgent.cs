@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Web.Script.Serialization;
@@ -32,6 +33,10 @@ namespace ControlHorarioBiometricAgent
         public int ExitCode;
         public string Stdout = "";
         public string Stderr = "";
+        public string BridgePath = "";
+        public string WorkingDirectory = "";
+        public string Arguments = "";
+        public string Sha256 = "";
         public Dictionary<string, string> Data = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
     }
 
@@ -53,9 +58,16 @@ namespace ControlHorarioBiometricAgent
     /// </summary>
     internal static class Program
     {
-        private const string AgentVersion = "1.0.4";
+        private const string AgentVersion = "1.0.5";
         private static readonly JavaScriptSerializer Json = new JavaScriptSerializer();
+        private static readonly HashSet<string> BridgeProtocolKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "provider", "success", "code", "message", "sdkLoaded", "sdkInitCode",
+            "deviceCount", "connected", "opened", "ready", "error", "id", "score",
+            "templatesReceived", "templatesValid", "templatesLoaded", "templatesRejected", "template"
+        };
         private static AgentConfig Config;
+        private static Mutex InstanceMutex;
 
         /// <summary>
         /// Inicializa el proceso del agente o bridge, procesa el comando solicitado y garantiza la liberacion de recursos nativos.
@@ -65,6 +77,14 @@ namespace ControlHorarioBiometricAgent
             Log("Agente iniciado");
             Config = LoadConfig();
             Config.BridgePath = ResolvePath(Config.BridgePath);
+
+            bool createdNew;
+            InstanceMutex = new Mutex(true, @"Local\ControlHorarioBiometricAgent", out createdNew);
+            if (!createdNew)
+            {
+                Log("AGENT_ALREADY_RUNNING");
+                return;
+            }
 
             if (!Config.ListenUrl.StartsWith("http://127.0.0.1:", StringComparison.OrdinalIgnoreCase)
                 && !Config.ListenUrl.StartsWith("http://localhost:", StringComparison.OrdinalIgnoreCase))
@@ -316,8 +336,16 @@ namespace ControlHorarioBiometricAgent
                     { "fingerprintsParsed", fingerprints.Templates.Count },
                     { "invalidTemplates", fingerprints.InvalidCount },
                     { "bridgeAvailable", File.Exists(Config.BridgePath) },
+                    { "bridgePath", bridge.BridgePath },
+                    { "bridgeFileExists", File.Exists(Config.BridgePath) },
+                    { "bridgeSHA256", bridge.Sha256 },
+                    { "bridgeExitCode", bridge.ExitCode },
+                    { "bridgeStdoutLength", bridge.Stdout.Length },
+                    { "bridgeStderrLength", bridge.Stderr.Length },
                     { "sdkLoaded", GetBool(bridge.Data, "sdkLoaded") },
                     { "deviceCount", GetInt(bridge.Data, "deviceCount", 0) },
+                    { "connected", GetBool(bridge.Data, "connected") },
+                    { "opened", GetBool(bridge.Data, "opened") },
                     { "deviceReady", ready },
                     { "templateLoadError", fingerprints.ErrorCode }
                 }}
@@ -653,35 +681,98 @@ namespace ControlHorarioBiometricAgent
                 throw new FileNotFoundException("No existe Zk9500Bridge.exe", Config.BridgePath);
             }
 
+            var workingDirectory = Path.GetDirectoryName(Config.BridgePath);
+            var arguments = BuildArguments(args);
             var psi = new ProcessStartInfo
             {
                 FileName = Config.BridgePath,
-                Arguments = BuildArguments(args),
-                WorkingDirectory = Path.GetDirectoryName(Config.BridgePath),
+                Arguments = arguments,
+                WorkingDirectory = workingDirectory,
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 CreateNoWindow = true
             };
+            psi.EnvironmentVariables["PATH"] = workingDirectory + ";" + (Environment.GetEnvironmentVariable("PATH") ?? "");
+
+            var hash = CalculateFileSha256(Config.BridgePath);
+            Log("[BIOMETRIC] BridgePath: " + Config.BridgePath);
+            Log("[BIOMETRIC] BridgeSHA256: " + hash);
+            Log("[BIOMETRIC] WorkingDirectory: " + workingDirectory);
+            Log("[BIOMETRIC] Arguments: " + SafeBridgeArguments(args));
 
             using (var process = Process.Start(psi))
             {
+                if (process == null) throw new InvalidOperationException("No fue posible iniciar Zk9500Bridge.exe.");
+                string stdout = "";
+                string stderr = "";
+                var stdoutReader = new Thread(() => stdout = process.StandardOutput.ReadToEnd());
+                var stderrReader = new Thread(() => stderr = process.StandardError.ReadToEnd());
+                stdoutReader.IsBackground = true;
+                stderrReader.IsBackground = true;
+                stdoutReader.Start();
+                stderrReader.Start();
                 if (!process.WaitForExit(timeoutSeconds * 1000))
                 {
                     try { process.Kill(); } catch { }
+                    process.WaitForExit();
+                    stdoutReader.Join();
+                    stderrReader.Join();
                     throw new TimeoutException("Tiempo de espera agotado al comunicarse con el lector ZK9500.");
                 }
+                stdoutReader.Join();
+                stderrReader.Join();
 
                 var result = new BridgeResult
                 {
                     ExitCode = process.ExitCode,
-                    Stdout = process.StandardOutput.ReadToEnd(),
-                    Stderr = process.StandardError.ReadToEnd()
+                    Stdout = stdout,
+                    Stderr = stderr,
+                    BridgePath = Config.BridgePath,
+                    WorkingDirectory = workingDirectory,
+                    Arguments = SafeBridgeArguments(args),
+                    Sha256 = hash
                 };
                 result.Data = ParseBridgeOutput(result.Stdout);
-                Log("Bridge " + args[0] + " exitCode=" + result.ExitCode + " code=" + GetData(result.Data, "code"));
+                Log("Bridge command=" + args[0] + " exitCode=" + result.ExitCode + " stdoutLength=" + result.Stdout.Length + " stderrLength=" + result.Stderr.Length + " code=" + GetData(result.Data, "code"));
+                if (String.Equals(args[0], "status", StringComparison.OrdinalIgnoreCase))
+                {
+                    Log("----- BRIDGE STATUS STDOUT -----\r\n" + result.Stdout + "\r\n----- END STDOUT -----");
+                    if (!String.IsNullOrWhiteSpace(result.Stderr))
+                    {
+                        Log("----- BRIDGE STATUS STDERR -----\r\n" + result.Stderr + "\r\n----- END STDERR -----");
+                    }
+                }
                 return result;
             }
+        }
+
+        /// <summary>
+        /// Obtiene el hash del bridge para confirmar que el agente ejecuta la misma copia validada manualmente.
+        /// </summary>
+        private static string CalculateFileSha256(string path)
+        {
+            try
+            {
+                using (var stream = File.OpenRead(path))
+                using (var sha256 = SHA256.Create())
+                {
+                    return BitConverter.ToString(sha256.ComputeHash(stream)).Replace("-", "");
+                }
+            }
+            catch (Exception ex)
+            {
+                Log("No se pudo calcular SHA256 del bridge: " + ex.GetType().Name);
+                return "";
+            }
+        }
+
+        /// <summary>
+        /// Evita que los logs del agente expongan rutas temporales de templates durante enrolamiento o identificacion.
+        /// </summary>
+        private static string SafeBridgeArguments(string[] args)
+        {
+            return args != null && args.Length > 0 ? args[0] : "";
         }
 
         /// <summary>
@@ -720,7 +811,9 @@ namespace ControlHorarioBiometricAgent
                 {
                     var index = line.IndexOf('=');
                     if (index <= 0) continue;
-                    data[line.Substring(0, index).Trim()] = line.Substring(index + 1).Trim();
+                    var key = line.Substring(0, index).Trim();
+                    if (!BridgeProtocolKeys.Contains(key)) continue;
+                    data[key] = line.Substring(index + 1).Trim();
                 }
             }
             return data;

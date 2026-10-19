@@ -2,6 +2,8 @@
 
 Agente local para computadoras con lector ZKTeco ZK9500 conectado por USB.
 
+Version actual: `1.0.5`.
+
 Responsabilidad del agente:
 
 - Escuchar solo en `http://127.0.0.1:8765`.
@@ -37,8 +39,9 @@ El script compila el agente x86, incorpora el bridge ZK9500 con sus DLL requerid
 - POST /identify-and-mark
 
 `GET /diagnostics` muestra un resumen seguro del agente: version, comunicacion
-con el servidor, conteo de huellas reportadas y procesadas, y estado del bridge
-y del lector. No expone templates, tokens ni credenciales.
+con el servidor, conteo de huellas reportadas y procesadas, ruta y SHA256 del
+bridge, codigo de salida, longitudes de salida y estado del lector. No expone
+templates, tokens ni credenciales.
 
 El navegador del punto de marcaje llama al agente local. El agente llama al backend hospedado.
 
@@ -63,6 +66,7 @@ El instalador:
 - no deja consola negra abierta;
 - crea desinstalador en Aplicaciones instaladas de Windows;
 - conserva `C:\ProgramData\ControlHorarioBiometricAgent\appsettings.json` si se instala una nueva version encima.
+- cierra una instancia anterior antes de actualizar los ejecutables y DLL, e inicia una unica instancia nueva.
 
 Configuracion editable sin recompilar:
 
