@@ -16,6 +16,17 @@ namespace HorariosControl.Zk9500Bridge
     }
 
     /// <summary>
+    /// Resume la carga de templates en la base temporal del SDK sin exponer datos biometricos.
+    /// </summary>
+    internal class TemplateLoadSummary
+    {
+        public int Received;
+        public int Valid;
+        public int Added;
+        public int Rejected;
+    }
+
+    /// <summary>
     /// Agrupa el proceso que expone el agente local o ejecuta el bridge de integracion con ZKFinger.
     /// </summary>
     internal class Program
@@ -54,6 +65,11 @@ namespace HorariosControl.Zk9500Bridge
 
                 Error("COMANDO_INVALIDO", "Comando no soportado.");
                 return 2;
+            }
+            catch (TimeoutException error)
+            {
+                Error("CAPTURE_TIMEOUT", error.Message);
+                return 7;
             }
             catch (Exception error)
             {
@@ -118,7 +134,8 @@ namespace HorariosControl.Zk9500Bridge
                 byte[] captured = CaptureTemplate(timeoutSeconds);
                 int duplicateId;
                 int duplicateScore;
-                if (IdentifyLoaded(captured, out duplicateId, out duplicateScore))
+                int duplicateRet;
+                if (IdentifyLoaded(captured, out duplicateId, out duplicateScore, out duplicateRet))
                 {
                     Error("HUELLA_DUPLICADA", "Esta huella ya se encuentra registrada en el sistema.");
                     return 3;
@@ -158,21 +175,33 @@ namespace HorariosControl.Zk9500Bridge
         private static int Identify(string templatesPath, int timeoutSeconds)
         {
             OpenDevice(0, true);
-            LoadTemplates(templatesPath);
+            TemplateLoadSummary loaded = LoadTemplates(templatesPath);
+            if (loaded.Added == 0)
+            {
+                Error("TEMPLATES_INCOMPATIBLES", "No se pudo cargar ninguna huella valida en el lector.");
+                return 6;
+            }
+
+            Console.Error.WriteLine("[BIOMETRIC] Esperando huella...");
             byte[] captured = CaptureTemplate(timeoutSeconds);
 
             int id;
             int score;
-            if (IdentifyLoaded(captured, out id, out score))
+            int ret;
+            if (IdentifyLoaded(captured, out id, out score, out ret))
             {
+                Console.WriteLine("dbIdentifyRet=" + ret);
                 Console.WriteLine("success=true");
                 Console.WriteLine("id=" + id);
                 Console.WriteLine("score=" + score);
                 return 0;
             }
 
+            Console.WriteLine("dbIdentifyRet=" + ret);
+            Console.WriteLine("id=" + id);
+            Console.WriteLine("score=" + score);
             Error("HUELLA_NO_RECONOCIDA", "Huella no reconocida.");
-            return 6;
+            return 8;
         }
 
         /// <summary>
@@ -277,22 +306,32 @@ namespace HorariosControl.Zk9500Bridge
         /// <summary>
         /// Carga los templates autorizados en la base temporal del SDK para DBIdentify y deteccion de duplicados.
         /// </summary>
-        private static void LoadTemplates(string templatesPath)
+        private static TemplateLoadSummary LoadTemplates(string templatesPath)
         {
-            foreach (TemplateRecord record in ReadTemplates(templatesPath))
+            TemplateLoadSummary summary = new TemplateLoadSummary();
+            foreach (TemplateRecord record in ReadTemplates(templatesPath, summary))
             {
                 int ret = zkfp2.DBAdd(databaseHandle, record.Id, record.Template);
                 if (ret != zkfperrdef.ZKFP_ERR_OK)
                 {
-                    Console.Error.WriteLine("[BIOMETRIC] No se pudo cargar template id=" + record.Id + ", codigo=" + ret);
+                    summary.Rejected++;
+                    Console.Error.WriteLine("[BIOMETRIC] DBAdd fallo id=" + record.Id + " codigo=" + ret);
+                    continue;
                 }
+                summary.Added++;
             }
+            Console.WriteLine("templatesReceived=" + summary.Received);
+            Console.WriteLine("templatesValid=" + summary.Valid);
+            Console.WriteLine("templatesLoaded=" + summary.Added);
+            Console.WriteLine("templatesRejected=" + summary.Rejected);
+            Console.Error.WriteLine("[BIOMETRIC] Templates recibidos=" + summary.Received + " validos=" + summary.Valid + " cargados=" + summary.Added + " rechazados=" + summary.Rejected);
+            return summary;
         }
 
         /// <summary>
         /// Lee los templates autorizados del archivo temporal y los convierte para DBAdd.
         /// </summary>
-        private static List<TemplateRecord> ReadTemplates(string templatesPath)
+        private static List<TemplateRecord> ReadTemplates(string templatesPath, TemplateLoadSummary summary)
         {
             List<TemplateRecord> records = new List<TemplateRecord>();
             if (String.IsNullOrEmpty(templatesPath) || !File.Exists(templatesPath))
@@ -304,19 +343,39 @@ namespace HorariosControl.Zk9500Bridge
             {
                 if (String.IsNullOrWhiteSpace(line) || line.IndexOf('|') < 0)
                 {
+                    summary.Rejected++;
                     continue;
                 }
+                summary.Received++;
                 string[] parts = line.Split(new char[] { '|' }, 2);
                 int id;
-                if (!Int32.TryParse(parts[0], out id))
+                if (!Int32.TryParse(parts[0], out id) || id <= 0)
                 {
+                    summary.Rejected++;
+                    Console.Error.WriteLine("[BIOMETRIC] Template con ID invalido");
                     continue;
                 }
-                records.Add(new TemplateRecord
+
+                try
                 {
-                    Id = id,
-                    Template = zkfp2.Base64ToBlob(parts[1])
-                });
+                    byte[] decoded = Convert.FromBase64String(parts[1]);
+                    byte[] template = zkfp2.Base64ToBlob(parts[1]);
+                    if (decoded.Length == 0 || template == null || template.Length == 0)
+                    {
+                        throw new FormatException();
+                    }
+                    summary.Valid++;
+                    records.Add(new TemplateRecord
+                    {
+                        Id = id,
+                        Template = template
+                    });
+                }
+                catch (FormatException)
+                {
+                    summary.Rejected++;
+                    Console.Error.WriteLine("[BIOMETRIC] Template Base64 invalido id=" + id);
+                }
             }
             return records;
         }
@@ -324,11 +383,12 @@ namespace HorariosControl.Zk9500Bridge
         /// <summary>
         /// Ejecuta DBIdentify sobre la base temporal y valida que el puntaje indique una coincidencia util.
         /// </summary>
-        private static bool IdentifyLoaded(byte[] template, out int id, out int score)
+        private static bool IdentifyLoaded(byte[] template, out int id, out int score, out int ret)
         {
             id = 0;
             score = 0;
-            int ret = zkfp2.DBIdentify(databaseHandle, template, ref id, ref score);
+            ret = zkfp2.DBIdentify(databaseHandle, template, ref id, ref score);
+            Console.Error.WriteLine("[BIOMETRIC] DBIdentify ret=" + ret + " id=" + id + " score=" + score);
             return ret == zkfperrdef.ZKFP_ERR_OK && id > 0 && score > 0;
         }
 

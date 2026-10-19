@@ -3,10 +3,31 @@
  * Mantiene la responsabilidad indicada sin duplicar logica de dominio del backend.
  */
 import api from './api';
-import { identifyAndMarkWithAgent, useLocalAgent } from './localAgentService';
+import {
+  getAgentHealth,
+  getAgentStatus,
+  identifyAndMarkWithAgent,
+  useLocalAgent,
+} from './localAgentService';
+
+function agentError(code, message) {
+  const error = new Error(message);
+  error.response = { data: { code, message } };
+  throw error;
+}
 
 export async function registrarMarcacionBiometrica() {
   if (useLocalAgent()) {
+    const health = await getAgentHealth();
+    if (!health?.success) {
+      agentError('AGENT_OFFLINE', 'Servicio biometrico no disponible.');
+    }
+
+    const status = await getAgentStatus();
+    if (!status?.data?.ready) {
+      agentError('LECTOR_NO_DETECTADO', 'Lector ZKTeco ZK9500 no detectado.');
+    }
+
     return identifyAndMarkWithAgent();
   }
 

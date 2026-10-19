@@ -28,6 +28,12 @@ const agentApi = axios.create({
   withCredentials: false,
 });
 
+/** Consulta la disponibilidad basica del proceso local antes de usar el lector. */
+export async function getAgentHealth() {
+  const response = await agentApi.get('/health', { timeout: 5000 });
+  return response.data;
+}
+
 /**
 
  * Consulta /device/status del agente para mostrar disponibilidad real de SDK y ZK9500.

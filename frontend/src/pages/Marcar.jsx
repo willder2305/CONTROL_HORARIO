@@ -15,7 +15,19 @@ import { registrarMarcacionBiometrica } from '../services/marcacionService';
 function friendlyError(requestError) {
   const code = requestError.response?.data?.code;
   if (code === 'HUELLA_NO_RECONOCIDA') {
-    return 'Huella no reconocida. La huella no se encuentra registrada.';
+    return 'Huella no reconocida. La huella no corresponde a ningun trabajador registrado.';
+  }
+  if (code === 'TEMPLATES_NO_DISPONIBLES' || code === 'SIN_HUELLAS_REGISTRADAS') {
+    return 'No hay huellas disponibles para identificar. Verifique con el administrador.';
+  }
+  if (code === 'ERROR_CARGA_TEMPLATES' || code === 'TEMPLATES_INCOMPATIBLES') {
+    return 'No fue posible cargar las huellas registradas. Intente nuevamente o contacte al administrador.';
+  }
+  if (code === 'CAPTURE_TIMEOUT') {
+    return 'No se detecto ninguna huella. Intente nuevamente.';
+  }
+  if (code === 'BACKEND_NO_DISPONIBLE') {
+    return 'No se pudo conectar con el servidor. Verifique la conexion a Internet.';
   }
   if (code === 'LECTOR_NO_DISPONIBLE' || code === 'LECTOR_NO_DETECTADO') {
     return 'Lector de huellas no disponible. Verifique la conexion del ZKTeco ZK9500.';

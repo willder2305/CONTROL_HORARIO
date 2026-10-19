@@ -32,8 +32,13 @@ El script compila el agente x86, incorpora el bridge ZK9500 con sus DLL requerid
 
 - GET /health
 - GET /device/status
+- GET /diagnostics
 - POST /enroll
 - POST /identify-and-mark
+
+`GET /diagnostics` muestra un resumen seguro del agente: version, comunicacion
+con el servidor, conteo de huellas reportadas y procesadas, y estado del bridge
+y del lector. No expone templates, tokens ni credenciales.
 
 El navegador del punto de marcaje llama al agente local. El agente llama al backend hospedado.
 

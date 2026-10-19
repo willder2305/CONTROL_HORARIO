@@ -15,12 +15,16 @@ $runtimeDir = Join-Path $agentRoot "runtime"
 $runtimeConfig = Join-Path $runtimeDir "appsettings.json"
 $source = Join-Path $agentRoot "src\ControlHorarioBiometricAgent.cs"
 $agentBinary = Join-Path $agentRoot "bin\ControlHorarioBiometricAgent.exe"
+$bridgeSource = Join-Path $projectRoot "backend\zk9500_bridge\Zk9500Bridge.cs"
 $installerSource = Join-Path $agentRoot "installer\ControlHorarioBiometricAgent.iss"
 $bridgeRuntime = Join-Path $projectRoot "backend\zk9500_bridge\bin"
+$bridgeBinary = Join-Path $bridgeRuntime "Zk9500Bridge.exe"
+$bridgeReference = Join-Path $bridgeRuntime "libzkfpcsharp.dll"
 $output = Join-Path $projectRoot "output\biometric-agent\ControlHorarioBiometricAgent-Setup.exe"
 
 if (!(Test-Path -LiteralPath $ConfigPath)) { throw "No existe el archivo de configuracion indicado." }
 if (!(Test-Path -LiteralPath $bridgeRuntime)) { throw "No existe el runtime del bridge ZK9500." }
+if (!(Test-Path -LiteralPath $bridgeSource)) { throw "No existe el codigo fuente del bridge ZK9500." }
 
 $config = Get-Content -Raw -LiteralPath $ConfigPath | ConvertFrom-Json
 if ([string]::IsNullOrWhiteSpace($config.DeviceToken)) { throw "DeviceToken es obligatorio." }
@@ -65,6 +69,9 @@ if (Test-Path -LiteralPath $runtimeConfig) {
 New-Item -ItemType Directory -Path (Split-Path -Parent $agentBinary), $runtimeDir, (Split-Path -Parent $output) -Force | Out-Null
 
 try {
+    & $csc /nologo /target:exe /platform:x86 "/out:$bridgeBinary" "/reference:$bridgeReference" $bridgeSource
+    if ($LASTEXITCODE -ne 0) { throw "No se pudo compilar Zk9500Bridge.exe." }
+
     & $csc /nologo /target:exe /platform:x86 "/out:$agentBinary" /reference:System.Web.Extensions.dll $source
     if ($LASTEXITCODE -ne 0) { throw "No se pudo compilar ControlHorarioBiometricAgent.exe." }
 

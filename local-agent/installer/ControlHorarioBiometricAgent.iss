@@ -1,7 +1,7 @@
 ; Instalador Inno Setup del agente biometrico local.
 ; El script requiere que build-installer.ps1 prepare local-agent\runtime\appsettings.json fuera del control de versiones.
 #define MyAppName "Control Horario Biometric Agent"
-#define MyAppVersion "1.0.3"
+#define MyAppVersion "1.0.4"
 #define MyAppPublisher "Control Horario"
 #define MyAppExeName "ControlHorarioBiometricAgent.exe"
 

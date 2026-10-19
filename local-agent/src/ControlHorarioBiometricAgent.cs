@@ -36,11 +36,24 @@ namespace ControlHorarioBiometricAgent
     }
 
     /// <summary>
+    /// Conserva el resultado seguro de descargar y validar los templates entregados por el backend.
+    /// </summary>
+    internal class FingerprintFetchResult
+    {
+        public List<Dictionary<string, string>> Templates = new List<Dictionary<string, string>>();
+        public int ServerCount = -1;
+        public int InvalidCount;
+        public string RuntimeType = "";
+        public string ErrorCode = "";
+        public string ErrorMessage = "";
+    }
+
+    /// <summary>
     /// Agrupa el proceso que expone el agente local o ejecuta el bridge de integracion con ZKFinger.
     /// </summary>
     internal static class Program
     {
-        private const string AgentVersion = "1.0.3";
+        private const string AgentVersion = "1.0.4";
         private static readonly JavaScriptSerializer Json = new JavaScriptSerializer();
         private static AgentConfig Config;
 
@@ -65,15 +78,23 @@ namespace ControlHorarioBiometricAgent
                 Config.ListenUrl += "/";
             }
 
-            var listener = new HttpListener();
-            listener.Prefixes.Add(Config.ListenUrl);
-            listener.Start();
-            Log("ControlHorarioBiometricAgent escuchando en " + Config.ListenUrl);
-
-            while (true)
+            try
             {
-                var context = listener.GetContext();
-                ThreadPool.QueueUserWorkItem(_ => HandleRequest(context));
+                var listener = new HttpListener();
+                listener.Prefixes.Add(Config.ListenUrl);
+                listener.Start();
+                Log("ControlHorarioBiometricAgent escuchando en " + Config.ListenUrl);
+
+                while (true)
+                {
+                    var context = listener.GetContext();
+                    ThreadPool.QueueUserWorkItem(_ => HandleRequest(context));
+                }
+            }
+            catch (Exception ex)
+            {
+                Log("AGENT_START_FAILED type=" + ex.GetType().Name + " message=" + ex.Message + " listenUrl=" + Config.ListenUrl);
+                Environment.Exit(1);
             }
         }
 
@@ -218,6 +239,12 @@ namespace ControlHorarioBiometricAgent
                     return;
                 }
 
+                if (context.Request.HttpMethod == "GET" && path == "/diagnostics")
+                {
+                    HandleDiagnostics(context);
+                    return;
+                }
+
                 if (context.Request.HttpMethod == "POST" && path == "/enroll")
                 {
                     HandleEnroll(context);
@@ -271,11 +298,45 @@ namespace ControlHorarioBiometricAgent
         }
 
         /// <summary>
+        /// Publica el estado operativo del agente sin exponer tokens, templates ni configuracion sensible.
+        /// </summary>
+        private static void HandleDiagnostics(HttpListenerContext context)
+        {
+            var fingerprints = FetchFingerprints();
+            var bridge = RunBridge(new[] { "status" }, 20);
+            var ready = GetBool(bridge.Data, "ready") && bridge.ExitCode == 0;
+            WriteJson(context, 200, new Dictionary<string, object>
+            {
+                { "success", true },
+                { "data", new Dictionary<string, object> {
+                    { "agentVersion", AgentVersion },
+                    { "serverReachable", String.IsNullOrEmpty(fingerprints.ErrorCode) },
+                    { "agentAuthorized", String.IsNullOrEmpty(fingerprints.ErrorCode) },
+                    { "fingerprintsReportedByServer", fingerprints.ServerCount },
+                    { "fingerprintsParsed", fingerprints.Templates.Count },
+                    { "invalidTemplates", fingerprints.InvalidCount },
+                    { "bridgeAvailable", File.Exists(Config.BridgePath) },
+                    { "sdkLoaded", GetBool(bridge.Data, "sdkLoaded") },
+                    { "deviceCount", GetInt(bridge.Data, "deviceCount", 0) },
+                    { "deviceReady", ready },
+                    { "templateLoadError", fingerprints.ErrorCode }
+                }}
+            });
+        }
+
+        /// <summary>
         /// Captura un template mediante el bridge y devuelve unicamente el resultado necesario para el backend.
         /// </summary>
         private static void HandleEnroll(HttpListenerContext context)
         {
-            var templatesPath = WriteTemplatesFile(FetchFingerprints());
+            var fingerprints = FetchFingerprints();
+            if (!String.IsNullOrEmpty(fingerprints.ErrorCode))
+            {
+                WriteJson(context, 503, Error(fingerprints.ErrorCode, fingerprints.ErrorMessage));
+                return;
+            }
+
+            var templatesPath = WriteTemplatesFile(fingerprints.Templates);
             try
             {
                 var result = RunBridge(new[] {
@@ -317,16 +378,29 @@ namespace ControlHorarioBiometricAgent
         /// </summary>
         private static void HandleIdentifyAndMark(HttpListenerContext context)
         {
-            var templates = FetchFingerprints();
-            if (templates.Count == 0)
+            Log("Inicio identify-and-mark");
+            var fingerprints = FetchFingerprints();
+            if (!String.IsNullOrEmpty(fingerprints.ErrorCode))
             {
-                WriteJson(context, 404, Error("HUELLA_NO_RECONOCIDA", "No hay huellas activas para identificar."));
+                WriteJson(context, 503, Error(fingerprints.ErrorCode, fingerprints.ErrorMessage));
                 return;
             }
 
-            var templatesPath = WriteTemplatesFile(templates);
+            if (fingerprints.Templates.Count == 0)
+            {
+                var code = fingerprints.ServerCount == 0
+                    ? "SIN_HUELLAS_REGISTRADAS"
+                    : "TEMPLATES_NO_DISPONIBLES";
+                WriteJson(context, 404, Error(
+                    code,
+                    "No existen huellas activas disponibles para identificacion."));
+                return;
+            }
+
+            var templatesPath = WriteTemplatesFile(fingerprints.Templates);
             try
             {
+                Log("Ejecutando Zk9500Bridge identify templates=" + fingerprints.Templates.Count);
                 var result = RunBridge(new[] {
                     "identify",
                     "--templates", templatesPath,
@@ -335,6 +409,7 @@ namespace ControlHorarioBiometricAgent
 
                 if (GetData(result.Data, "code") == "HUELLA_NO_RECONOCIDA")
                 {
+                    Log("DBIdentify sin coincidencia");
                     WriteJson(context, 404, Error("HUELLA_NO_RECONOCIDA", "Huella no reconocida."));
                     return;
                 }
@@ -370,30 +445,121 @@ namespace ControlHorarioBiometricAgent
         /// <summary>
         /// Obtiene por canal autenticado los templates activos requeridos para identificacion local, sin datos personales.
         /// </summary>
-        private static List<Dictionary<string, string>> FetchFingerprints()
+        private static FingerprintFetchResult FetchFingerprints()
         {
+            var result = new FingerprintFetchResult();
             int statusCode;
-            var response = ServerRequest("GET", "/api/agent/fingerprints", null, out statusCode);
-            if (statusCode < 200 || statusCode >= 300)
+            try
             {
-                throw new InvalidOperationException("No se pudieron descargar templates biometrico del servidor: " + response);
-            }
-
-            var root = Json.DeserializeObject(response) as Dictionary<string, object>;
-            var data = root != null && root.ContainsKey("data") ? root["data"] as Dictionary<string, object> : null;
-            var list = data != null && data.ContainsKey("fingerprints") ? data["fingerprints"] as ArrayList : null;
-            var result = new List<Dictionary<string, string>>();
-            if (list == null) return result;
-
-            foreach (var item in list)
-            {
-                var row = item as Dictionary<string, object>;
-                if (row == null) continue;
-                result.Add(new Dictionary<string, string>
+                Log("Solicitando templates al backend");
+                var response = ServerRequest("GET", "/api/agent/fingerprints", null, out statusCode);
+                Log("HTTP status backend: " + statusCode);
+                if (statusCode < 200 || statusCode >= 300)
                 {
-                    { "id", Convert.ToString(row["id"]) },
-                    { "template", Convert.ToString(row["template"]) }
-                });
+                    result.ErrorCode = "BACKEND_NO_DISPONIBLE";
+                    result.ErrorMessage = "No se pudieron descargar las huellas registradas del servidor.";
+                    return result;
+                }
+
+                var root = Json.DeserializeObject(response) as Dictionary<string, object>;
+                if (root == null)
+                {
+                    result.ErrorCode = "ERROR_CARGA_TEMPLATES";
+                    result.ErrorMessage = "El servidor devolvio una respuesta de huellas invalida.";
+                    return result;
+                }
+
+                object rawData;
+                if (!root.TryGetValue("data", out rawData) || rawData == null)
+                {
+                    result.ErrorCode = "ERROR_CARGA_TEMPLATES";
+                    result.ErrorMessage = "El servidor no incluyo datos de huellas.";
+                    return result;
+                }
+
+                var data = rawData as Dictionary<string, object>;
+                if (data == null)
+                {
+                    result.ErrorCode = "ERROR_CARGA_TEMPLATES";
+                    result.ErrorMessage = "El formato de datos de huellas no es valido.";
+                    return result;
+                }
+
+                result.ServerCount = GetObjectInt(data, "count", -1);
+                object rawFingerprints;
+                if (!data.TryGetValue("fingerprints", out rawFingerprints) || rawFingerprints == null)
+                {
+                    result.ErrorCode = "ERROR_CARGA_TEMPLATES";
+                    result.ErrorMessage = "El servidor no incluyo las huellas disponibles.";
+                    return result;
+                }
+
+                result.RuntimeType = rawFingerprints.GetType().FullName;
+                Log("Tipo runtime fingerprints: " + result.RuntimeType);
+                var fingerprints = rawFingerprints as IEnumerable;
+                if (fingerprints == null || rawFingerprints is string)
+                {
+                    result.ErrorCode = "ERROR_CARGA_TEMPLATES";
+                    result.ErrorMessage = "El listado de huellas recibido no tiene un formato valido.";
+                    return result;
+                }
+
+                foreach (var item in fingerprints)
+                {
+                    var row = item as Dictionary<string, object>;
+                    object rawId;
+                    object rawTemplate;
+                    int fingerprintId;
+                    var template = "";
+                    if (row == null
+                        || !row.TryGetValue("id", out rawId)
+                        || !Int32.TryParse(Convert.ToString(rawId), out fingerprintId)
+                        || fingerprintId <= 0
+                        || !row.TryGetValue("template", out rawTemplate))
+                    {
+                        result.InvalidCount++;
+                        Log("Template invalido sin identificador valido.");
+                        continue;
+                    }
+
+                    template = Convert.ToString(rawTemplate);
+                    try
+                    {
+                        var decoded = Convert.FromBase64String(template);
+                        if (decoded.Length == 0) throw new FormatException();
+                    }
+                    catch (FormatException)
+                    {
+                        result.InvalidCount++;
+                        Log("Template invalido para huella ID " + fingerprintId);
+                        continue;
+                    }
+
+                    result.Templates.Add(new Dictionary<string, string>
+                    {
+                        { "id", fingerprintId.ToString() },
+                        { "template", template }
+                    });
+                }
+
+                Log("Templates reportados=" + result.ServerCount + " validos=" + result.Templates.Count + " invalidos=" + result.InvalidCount);
+                if (result.ServerCount > 0 && result.Templates.Count == 0)
+                {
+                    result.ErrorCode = "ERROR_CARGA_TEMPLATES";
+                    result.ErrorMessage = "No fue posible cargar las huellas registradas.";
+                }
+            }
+            catch (WebException ex)
+            {
+                result.ErrorCode = "BACKEND_NO_DISPONIBLE";
+                result.ErrorMessage = "No se pudo conectar con el servidor.";
+                Log("Backend no disponible status=" + ex.Status + " message=" + ex.Message);
+            }
+            catch (Exception ex)
+            {
+                result.ErrorCode = "ERROR_CARGA_TEMPLATES";
+                result.ErrorMessage = "No fue posible cargar las huellas registradas.";
+                Log("Error cargando templates: " + ex.GetType().Name + " " + ex.Message);
             }
             return result;
         }
@@ -404,6 +570,7 @@ namespace ControlHorarioBiometricAgent
         private static string WriteTemplatesFile(List<Dictionary<string, string>> templates)
         {
             var path = Path.GetTempFileName();
+            Log("Escribiendo archivo temporal de templates: " + templates.Count);
             using (var writer = new StreamWriter(path, false, Encoding.ASCII))
             {
                 foreach (var template in templates)
@@ -512,6 +679,7 @@ namespace ControlHorarioBiometricAgent
                     Stderr = process.StandardError.ReadToEnd()
                 };
                 result.Data = ParseBridgeOutput(result.Stdout);
+                Log("Bridge " + args[0] + " exitCode=" + result.ExitCode + " code=" + GetData(result.Data, "code"));
                 return result;
             }
         }
@@ -581,6 +749,18 @@ namespace ControlHorarioBiometricAgent
         {
             int parsed;
             return int.TryParse(GetData(data, key), out parsed) ? parsed : fallback;
+        }
+
+        /// <summary>
+        /// Obtiene un entero de un objeto JSON sin asumir el tipo concreto utilizado por JavaScriptSerializer.
+        /// </summary>
+        private static int GetObjectInt(Dictionary<string, object> data, string key, int fallback)
+        {
+            object value;
+            int parsed;
+            return data.TryGetValue(key, out value) && int.TryParse(Convert.ToString(value), out parsed)
+                ? parsed
+                : fallback;
         }
 
         /// <summary>
