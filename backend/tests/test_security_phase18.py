@@ -89,3 +89,17 @@ def test_logout_requires_csrf_token_when_enabled():
 
     assert rejected.status_code == 403
     assert accepted.status_code == 200
+
+
+def test_session_refresh_requires_csrf_token_when_enabled():
+    app, client, csrf_token = build_security_client()
+
+    rejected = client.post("/api/auth/session/refresh")
+    accepted = client.post(
+        "/api/auth/session/refresh",
+        headers={"X-CSRF-Token": csrf_token},
+    )
+
+    assert rejected.status_code == 403
+    assert accepted.status_code == 200
+    assert accepted.get_json()["data"]["seconds_remaining"] > 0

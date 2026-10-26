@@ -63,3 +63,8 @@ export async function getHistorialHorarios(trabajadorId) {
   );
   return response.data;
 }
+
+export async function listAsignacionesHorario() {
+  const response = await api.get('/admin/horarios/asignaciones');
+  return response.data;
+}

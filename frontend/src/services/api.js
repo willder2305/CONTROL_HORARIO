@@ -29,13 +29,24 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-api.interceptors.response.use((response) => {
-  const token = response.data?.data?.csrf_token;
-  if (token) {
-    csrfToken = token;
-    sessionStorage.setItem('csrfToken', token);
-  }
-  return response;
-});
+api.interceptors.response.use(
+  (response) => {
+    const token = response.data?.data?.csrf_token;
+    if (token) {
+      csrfToken = token;
+      sessionStorage.setItem('csrfToken', token);
+    }
+    return response;
+  },
+  (error) => {
+    if (
+      error.response?.status === 401 &&
+      error.response?.data?.code === 'NO_AUTENTICADO'
+    ) {
+      window.dispatchEvent(new Event('auth:expired'));
+    }
+    return Promise.reject(error);
+  },
+);
 
 export default api;

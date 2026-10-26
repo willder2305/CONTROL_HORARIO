@@ -37,8 +37,8 @@ export default function Trabajadores() {
   const [readerStatus, setReaderStatus] = useState(null);
   const [fingerprintModal, setFingerprintModal] = useState(null);
   const isEditing = useMemo(() => Boolean(form.id), [form.id]);
-  const isMockMode = readerStatus?.provider === 'mock';
   const isPhysicalReader = ['zk9500', 'local_agent'].includes(readerStatus?.provider);
+  const readerConnected = isPhysicalReader && readerStatus?.connected !== false && readerStatus?.ready !== false;
 
   /**
    * Envia la operacion administrativa a la API y devuelve su respuesta para actualizar la interfaz.
@@ -89,6 +89,8 @@ export default function Trabajadores() {
    * @returns {JSX.Element|Promise<unknown>|unknown} Resultado de la operacion o elemento renderizado.
    */
   function handleFormChange(event) {
+    setMessage('');
+    setError('');
     setForm((current) => ({
       ...current,
       [event.target.name]: event.target.value,
@@ -130,7 +132,7 @@ export default function Trabajadores() {
       }
       setFingerprintModal({
         title: 'Registrar huella',
-        body: isMockMode ? 'Validando huella de desarrollo...' : 'Comprobando lector...',
+        body: 'Comprobando lector...',
       });
     }
 
@@ -195,21 +197,15 @@ export default function Trabajadores() {
    * @returns {JSX.Element|Promise<unknown>|unknown} Resultado de la operacion o elemento renderizado.
    */
   async function registerFingerprint(worker) {
-    const fingerprintId = isMockMode
-      ? window.prompt(`Identificacion biometrica de desarrollo para ${worker.codigo}.`, '')
-      : '';
-
-    if (fingerprintId === null) return;
-
     setError('');
     setMessage('');
     setFingerprintModal({
       title: 'Registrar huella',
-      body: isMockMode ? 'Validando huella de desarrollo...' : 'Comprobando lector...',
+      body: 'Comprobando lector...',
     });
 
     try {
-      const response = await registrarHuella(worker.id, fingerprintId, { onProgress: updateFingerprintProgress });
+      const response = await registrarHuella(worker.id, '', { onProgress: updateFingerprintProgress });
       setMessage(response.message);
       await loadWorkers();
       await loadReaderStatus();
@@ -258,7 +254,7 @@ export default function Trabajadores() {
           <form className="content-panel worker-form" onSubmit={handleSubmit}>
             <h2>{isEditing ? 'Editar trabajador' : 'Crear trabajador'}</h2>
             <label>
-              Codigo
+              Código
               <input
                 type="text"
                 name="codigo"
@@ -295,21 +291,8 @@ export default function Trabajadores() {
                   Huella no registrada. Para crear un trabajador activo debe registrar una huella.
                 </p>
                 <p className="muted">
-                  Lector: {isPhysicalReader ? 'ZKTeco ZK9500' : 'Modo desarrollo'}
+                  Lector: ZKTeco ZK9500. {readerConnected ? 'Lector conectado.' : 'Lector no disponible.'}
                 </p>
-                {isMockMode && (
-                  <label>
-                    Huella de desarrollo
-                    <input
-                      type="text"
-                      name="fingerprintId"
-                      value={form.fingerprintId}
-                      onChange={handleFormChange}
-                      placeholder="FP0001"
-                      required
-                    />
-                  </label>
-                )}
               </section>
             )}
 
@@ -323,7 +306,11 @@ export default function Trabajadores() {
                 <button
                   className="secondary-button"
                   type="button"
-                  onClick={() => setForm(initialForm)}
+                  onClick={() => {
+                    setForm(initialForm);
+                    setMessage('');
+                    setError('');
+                  }}
                 >
                   Cancelar
                 </button>
@@ -340,7 +327,7 @@ export default function Trabajadores() {
                   name="q"
                   value={filters.q}
                   onChange={handleFilterChange}
-                  placeholder="Codigo, nombre o apellido"
+                  placeholder="Código, nombre o apellido"
                 />
               </label>
               <label>
@@ -368,7 +355,7 @@ export default function Trabajadores() {
                 <table>
                   <thead>
                     <tr>
-                      <th>Codigo</th>
+                      <th>Código</th>
                       <th>Nombre</th>
                       <th>Apellido</th>
                       <th>Estado</th>

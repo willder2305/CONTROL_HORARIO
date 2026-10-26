@@ -12,6 +12,7 @@ from app.routes.auth import current_admin, require_admin
 from app.services.fingerprint import get_fingerprint_provider
 from app.services.fingerprint.real_provider import FingerprintDeviceError, FingerprintDuplicateError
 from app.services.fingerprint.template_utils import template_from_agent_payload
+from app.utils.datetime_utils import obtener_hora_actual
 
 trabajadores_bp = Blueprint("trabajadores", __name__)
 
@@ -68,8 +69,12 @@ def get_current_schedule(trabajador_id):
         Resultado de la operacion o respuesta HTTP correspondiente.
     """
     return (
-        HorarioTrabajador.query.filter_by(trabajador_id=trabajador_id, activo=True)
-        .order_by(HorarioTrabajador.fecha_inicio.desc(), HorarioTrabajador.id.desc())
+        HorarioTrabajador.query.filter(
+            HorarioTrabajador.trabajador_id == trabajador_id,
+            HorarioTrabajador.fecha_inicio <= obtener_hora_actual().date(),
+            (HorarioTrabajador.fecha_fin.is_(None))
+            | (HorarioTrabajador.fecha_fin >= obtener_hora_actual().date()),
+        ).order_by(HorarioTrabajador.fecha_inicio.desc(), HorarioTrabajador.id.desc())
         .first()
     )
 

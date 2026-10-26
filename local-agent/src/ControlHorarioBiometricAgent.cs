@@ -36,6 +36,19 @@ namespace ControlHorarioBiometricAgent
     }
 
     /// <summary>
+    /// Representa un fallo conocido de comunicacion para no devolver detalles internos al navegador.
+    /// </summary>
+    internal class AgentRequestException : Exception
+    {
+        public string Code;
+
+        public AgentRequestException(string code, string message) : base(message)
+        {
+            Code = code;
+        }
+    }
+
+    /// <summary>
     /// Agrupa el proceso que expone el agente local o ejecuta el bridge de integracion con ZKFinger.
     /// </summary>
     internal static class Program
@@ -236,7 +249,24 @@ namespace ControlHorarioBiometricAgent
             {
                 try
                 {
-                    WriteJson(context, 500, Error("AGENT_ERROR", ex.Message));
+                    Log("Error en solicitud: " + ex.GetType().Name);
+                    var knownError = ex as AgentRequestException;
+                    if (knownError != null)
+                    {
+                        WriteJson(context, 503, Error(knownError.Code, knownError.Message));
+                    }
+                    else if (ex is TimeoutException)
+                    {
+                        WriteJson(context, 408, Error("CAPTURE_TIMEOUT", "No se detectó ninguna huella. Intente nuevamente."));
+                    }
+                    else if (ex is FileNotFoundException)
+                    {
+                        WriteJson(context, 503, Error("SDK_NO_DISPONIBLE", "No se encontraron los componentes necesarios del lector ZK9500."));
+                    }
+                    else
+                    {
+                        WriteJson(context, 503, Error("ERROR_ZK9500", "No se pudo completar la operación biométrica. Intente nuevamente."));
+                    }
                 }
                 catch
                 {
@@ -287,8 +317,8 @@ namespace ControlHorarioBiometricAgent
                 if (result.ExitCode != 0 || !IsSuccess(result.Data))
                 {
                     WriteJson(context, 503, Error(
-                        GetData(result.Data, "code", "LECTOR_NO_DISPONIBLE"),
-                        GetData(result.Data, "error", "No se pudo capturar la huella.")));
+                        BridgeErrorCode(result),
+                        BridgeErrorMessage(BridgeErrorCode(result))));
                     return;
                 }
 
@@ -320,7 +350,7 @@ namespace ControlHorarioBiometricAgent
             var templates = FetchFingerprints();
             if (templates.Count == 0)
             {
-                WriteJson(context, 404, Error("HUELLA_NO_RECONOCIDA", "No hay huellas activas para identificar."));
+                WriteJson(context, 404, Error("TEMPLATES_NO_DISPONIBLES", "No hay huellas disponibles para identificar."));
                 return;
             }
 
@@ -342,8 +372,8 @@ namespace ControlHorarioBiometricAgent
                 if (result.ExitCode != 0 || !IsSuccess(result.Data))
                 {
                     WriteJson(context, 503, Error(
-                        GetData(result.Data, "code", "LECTOR_NO_DISPONIBLE"),
-                        GetData(result.Data, "error", "No se pudo identificar la huella.")));
+                        BridgeErrorCode(result),
+                        BridgeErrorMessage(BridgeErrorCode(result))));
                     return;
                 }
 
@@ -376,7 +406,24 @@ namespace ControlHorarioBiometricAgent
             var response = ServerRequest("GET", "/api/agent/fingerprints", null, out statusCode);
             if (statusCode < 200 || statusCode >= 300)
             {
-                throw new InvalidOperationException("No se pudieron descargar templates biometrico del servidor: " + response);
+                if (statusCode == 401)
+                {
+                    throw new AgentRequestException(
+                        "AGENT_NO_AUTORIZADO",
+                        "El servicio biométrico no está autorizado."
+                    );
+                }
+                if (statusCode >= 500)
+                {
+                    throw new AgentRequestException(
+                        "BACKEND_NO_DISPONIBLE",
+                        "No se pudo conectar con el sistema."
+                    );
+                }
+                throw new AgentRequestException(
+                    "ERROR_CARGA_TEMPLATES",
+                    "No se pudieron preparar las huellas registradas."
+                );
             }
 
             var root = Json.DeserializeObject(response) as Dictionary<string, object>;
@@ -564,6 +611,45 @@ namespace ControlHorarioBiometricAgent
         private static bool IsSuccess(Dictionary<string, string> data)
         {
             return String.Equals(GetData(data, "success"), "true", StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// Conserva solamente codigos de error conocidos del bridge para la interfaz publica.
+        /// </summary>
+        private static string BridgeErrorCode(BridgeResult result)
+        {
+            var code = GetData(result.Data, "code").ToUpperInvariant();
+            switch (code)
+            {
+                case "SDK_NO_DISPONIBLE":
+                case "LECTOR_NO_DETECTADO":
+                case "LECTOR_NO_DISPONIBLE":
+                case "CAPTURE_TIMEOUT":
+                case "HUELLA_NO_RECONOCIDA":
+                    return code;
+                default:
+                    return "ERROR_ZK9500";
+            }
+        }
+
+        /// <summary>
+        /// Traduce fallos del bridge sin exponer excepciones, DLLs o rutas locales.
+        /// </summary>
+        private static string BridgeErrorMessage(string code)
+        {
+            switch (code)
+            {
+                case "SDK_NO_DISPONIBLE":
+                    return "No se encontraron los componentes necesarios del lector ZK9500.";
+                case "LECTOR_NO_DETECTADO":
+                    return "Lector ZKTeco ZK9500 no detectado. Verifique la conexión USB.";
+                case "LECTOR_NO_DISPONIBLE":
+                    return "Lector ZKTeco ZK9500 no disponible. Verifique la conexión USB.";
+                case "CAPTURE_TIMEOUT":
+                    return "No se detectó ninguna huella. Intente nuevamente.";
+                default:
+                    return "No se pudo completar la operación biométrica. Intente nuevamente.";
+            }
         }
 
         /// <summary>

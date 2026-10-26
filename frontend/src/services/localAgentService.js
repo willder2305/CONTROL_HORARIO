@@ -55,7 +55,10 @@ export async function getAgentHealth() {
     const response = await agentApi.get("/health", { timeout: 8000 });
     return response.data;
   } catch (error) {
-    throw localAgentError("AGENT_OFFLINE", "Servicio biometrico no disponible.");
+    if (error.response?.status === 401) {
+      throw localAgentError("AGENT_NO_AUTORIZADO", "Agente biométrico no autorizado.");
+    }
+    throw localAgentError("AGENT_OFFLINE", "Servicio biométrico no disponible.");
   }
 }
 
@@ -85,7 +88,7 @@ async function ensureAgentAndDeviceReady(onProgress) {
   try {
     status = await getBiometricDeviceStatus();
   } catch (error) {
-    throw localAgentError("DEVICE_STATUS_FAILED", "No se pudo consultar el estado del lector.");
+    throw localAgentError("ERROR_ZK9500", "No se pudo consultar el estado del lector.");
   }
 
   const device = status.data || status;

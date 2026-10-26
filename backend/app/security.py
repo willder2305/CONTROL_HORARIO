@@ -110,4 +110,5 @@ def should_validate_csrf(app):
         path.startswith("/api/admin/")
         or path.startswith("/api/biometria/trabajadores/")
         or path == "/api/auth/logout"
+        or path.startswith("/api/auth/session/")
     )

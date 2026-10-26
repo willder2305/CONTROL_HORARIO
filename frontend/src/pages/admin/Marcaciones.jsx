@@ -5,6 +5,7 @@
 import { useEffect, useState } from 'react';
 
 import AdminNav from '../../components/AdminNav';
+import { listAsignacionesHorario } from '../../services/horarioService';
 import { listMarcacionesAdmin } from '../../services/marcacionService';
 import { listTrabajadores } from '../../services/trabajadorService';
 
@@ -55,6 +56,7 @@ function MarkCell({ mark }) {
 export default function Marcaciones() {
   const [filters, setFilters] = useState(initialFilters);
   const [workers, setWorkers] = useState([]);
+  const [schedules, setSchedules] = useState([]);
   const [dayRows, setDayRows] = useState([]);
   const [marks, setMarks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -69,11 +71,13 @@ export default function Marcaciones() {
     setLoading(true);
     setError('');
     try {
-      const [workersResponse, marksResponse] = await Promise.all([
+      const [workersResponse, schedulesResponse, marksResponse] = await Promise.all([
         listTrabajadores(),
+        listAsignacionesHorario(),
         listMarcacionesAdmin(params),
       ]);
       setWorkers(workersResponse.data.trabajadores);
+      setSchedules(schedulesResponse.data.horarios);
       setDayRows(marksResponse.data.jornada);
       setMarks(marksResponse.data.marcaciones);
     } catch (requestError) {
@@ -205,15 +209,19 @@ export default function Marcaciones() {
               </select>
             </label>
             <label>
-              Horario
-              <input
-                type="number"
-                min="1"
+              Horario asignado
+              <select
                 name="horario_id"
                 value={filters.horario_id}
                 onChange={handleChange}
-                placeholder="ID"
-              />
+              >
+                <option value="">Todos</option>
+                {schedules.map((schedule) => (
+                  <option key={schedule.id} value={schedule.id}>
+                    {schedule.trabajador} ({schedule.descripcion}, desde {schedule.fecha_inicio})
+                  </option>
+                ))}
+              </select>
             </label>
             <div className="button-row compact">
               <button className="plain-button" type="submit">

@@ -29,7 +29,22 @@ def parse_date(value):
     """
     if not value:
         return None
-    return datetime.strptime(value, "%Y-%m-%d").date()
+    try:
+        return datetime.strptime(value, "%Y-%m-%d").date()
+    except ValueError as error:
+        raise ValueError("La fecha debe tener el formato AAAA-MM-DD.") from error
+
+
+def parse_positive_id(value, field_name):
+    if not value:
+        return None
+    try:
+        parsed_value = int(value)
+    except (TypeError, ValueError) as error:
+        raise ValueError(f"El {field_name} seleccionado no es válido.") from error
+    if parsed_value <= 0:
+        raise ValueError(f"El {field_name} seleccionado no es válido.")
+    return parsed_value
 
 
 def serialize_time(value):
@@ -95,14 +110,16 @@ def build_mark_query(args):
     desde = parse_date(args.get("desde"))
     hasta = parse_date(args.get("hasta"))
 
-    if trabajador_id:
-        query = query.filter(Marcacion.trabajador_id == int(trabajador_id))
+    parsed_trabajador_id = parse_positive_id(trabajador_id, "trabajador")
+    if parsed_trabajador_id:
+        query = query.filter(Marcacion.trabajador_id == parsed_trabajador_id)
     if tipo_marcacion:
         query = query.filter(Marcacion.tipo_marcacion == tipo_marcacion)
     if estado:
         query = query.filter(Marcacion.estado == estado)
-    if horario_id:
-        query = query.filter(Marcacion.horario_trabajador_id == int(horario_id))
+    parsed_horario_id = parse_positive_id(horario_id, "horario")
+    if parsed_horario_id:
+        query = query.filter(Marcacion.horario_trabajador_id == parsed_horario_id)
     if fecha:
         query = query.filter(Marcacion.fecha == fecha)
     if desde:
@@ -306,13 +323,13 @@ def list_admin_marks():
     """
     try:
         query = build_mark_query(request.args)
-    except ValueError:
+    except ValueError as error:
         return (
             jsonify(
                 {
                     "success": False,
                     "code": "FILTROS_INVALIDOS",
-                    "message": "Revise el formato de fechas y filtros numericos.",
+                    "message": str(error) or "Revise el formato de fechas y filtros numéricos.",
                 }
             ),
             400,

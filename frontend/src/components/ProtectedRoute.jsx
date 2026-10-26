@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 
 import { getCurrentAdmin } from '../services/authService';
+import AdminLayout from './AdminLayout';
 import Loading from './Loading';
 
 /**
@@ -46,5 +47,5 @@ export default function ProtectedRoute({ children }) {
     return <Navigate to="/admin/login" replace />;
   }
 
-  return children;
+  return <AdminLayout>{children}</AdminLayout>;
 }
