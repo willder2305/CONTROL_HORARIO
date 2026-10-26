@@ -28,10 +28,20 @@ const agentApi = axios.create({
   withCredentials: false,
 });
 
+function localAgentError(code, message) {
+  const error = new Error(message);
+  error.response = { data: { code, message } };
+  return error;
+}
+
 /** Consulta la disponibilidad basica del proceso local antes de usar el lector. */
 export async function getAgentHealth() {
-  const response = await agentApi.get('/health', { timeout: 5000 });
-  return response.data;
+  try {
+    const response = await agentApi.get('/health', { timeout: 5000 });
+    return response.data;
+  } catch (error) {
+    throw localAgentError('AGENT_OFFLINE', 'Servicio biométrico no disponible.');
+  }
 }
 
 /**
@@ -45,8 +55,13 @@ export async function getAgentHealth() {
  */
 
 export async function getAgentStatus() {
-  const response = await agentApi.get('/device/status', { timeout: 12000 });
-  return response.data;
+  try {
+    const response = await agentApi.get('/device/status', { timeout: 12000 });
+    return response.data;
+  } catch (error) {
+    if (error.response?.data?.code) throw error;
+    throw localAgentError('ERROR_ZK9500', 'No se pudo consultar el estado del lector.');
+  }
 }
 
 /**

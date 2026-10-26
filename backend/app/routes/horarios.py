@@ -15,8 +15,25 @@ from app.services.schedule_service import (
     serialize_template,
     serialize_worker_schedule,
 )
+from app.utils.datetime_utils import obtener_hora_actual
 
 horarios_bp = Blueprint("horarios", __name__)
+
+
+def invalid_schedule_response(errors):
+    if "almuerzo" in errors:
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "code": "HORARIO_ALMUERZO_INCOMPLETO",
+                    "message": errors["almuerzo"],
+                    "errors": errors,
+                }
+            ),
+            400,
+        )
+    return jsonify({"success": False, "code": "DATOS_INVALIDOS", "errors": errors}), 400
 
 
 def audit(action, entity, entity_id, description):
@@ -75,7 +92,7 @@ def create_template():
     data = request.get_json(silent=True) or {}
     payload, errors = build_template_payload(data)
     if errors:
-        return jsonify({"success": False, "code": "DATOS_INVALIDOS", "errors": errors}), 400
+        return invalid_schedule_response(errors)
 
     if PlantillaHorario.query.filter_by(nombre=payload["nombre"]).first():
         return (
@@ -122,7 +139,7 @@ def update_template(template_id):
     data = request.get_json(silent=True) or {}
     payload, errors = build_template_payload(data)
     if errors:
-        return jsonify({"success": False, "code": "DATOS_INVALIDOS", "errors": errors}), 400
+        return invalid_schedule_response(errors)
 
     duplicated = PlantillaHorario.query.filter(
         PlantillaHorario.nombre == payload["nombre"],
@@ -194,20 +211,17 @@ def assign_schedule(worker_id):
     data = request.get_json(silent=True) or {}
     payload, errors = schedule_payload_from_assignment(data)
     if errors:
-        return jsonify({"success": False, "code": "DATOS_INVALIDOS", "errors": errors}), 400
+        return invalid_schedule_response(errors)
 
-    had_active_schedule = (
-        HorarioTrabajador.query.filter_by(trabajador_id=worker.id, activo=True).first()
-        is not None
-    )
-    schedule = assign_worker_schedule(worker.id, payload)
+    had_schedule = HorarioTrabajador.query.filter_by(trabajador_id=worker.id).first() is not None
+    schedule, created = assign_worker_schedule(worker.id, payload)
     db.session.flush()
-    action = "MODIFICAR_HORARIO" if had_active_schedule else "ASIGNAR_HORARIO"
+    action = "MODIFICAR_HORARIO" if had_schedule else "ASIGNAR_HORARIO"
     audit(
         action,
         "horarios_trabajadores",
         schedule.id,
-        f"Horario {'modificado' if had_active_schedule else 'asignado'} a {worker.codigo}",
+        f"Horario {'asignado' if created and not had_schedule else 'modificado'} a {worker.codigo}",
     )
     db.session.commit()
     return (
@@ -235,8 +249,14 @@ def current_worker_schedule(worker_id):
         Resultado de la operacion o respuesta HTTP correspondiente.
     """
     Trabajador.query.get_or_404(worker_id)
+    today = obtener_hora_actual().date()
     schedule = (
-        HorarioTrabajador.query.filter_by(trabajador_id=worker_id, activo=True)
+        HorarioTrabajador.query.filter(
+            HorarioTrabajador.trabajador_id == worker_id,
+            HorarioTrabajador.fecha_inicio <= today,
+            (HorarioTrabajador.fecha_fin.is_(None))
+            | (HorarioTrabajador.fecha_fin >= today),
+        )
         .order_by(HorarioTrabajador.fecha_inicio.desc(), HorarioTrabajador.id.desc())
         .first()
     )
@@ -244,6 +264,34 @@ def current_worker_schedule(worker_id):
         {
             "success": True,
             "data": {"horario": serialize_worker_schedule(schedule) if schedule else None},
+        }
+    )
+
+
+@horarios_bp.get("/asignaciones")
+@require_admin
+def list_schedule_assignments():
+    """Lista horarios asignados para filtros administrativos sin pedir IDs al usuario."""
+    schedules = (
+        HorarioTrabajador.query.join(Trabajador)
+        .order_by(Trabajador.codigo.asc(), HorarioTrabajador.fecha_inicio.desc())
+        .all()
+    )
+    return jsonify(
+        {
+            "success": True,
+            "data": {
+                "horarios": [
+                    {
+                        "id": schedule.id,
+                        "trabajador": f"{schedule.trabajador.codigo} - {schedule.trabajador.nombre} {schedule.trabajador.apellido}",
+                        "fecha_inicio": schedule.fecha_inicio.isoformat(),
+                        "fecha_fin": schedule.fecha_fin.isoformat() if schedule.fecha_fin else None,
+                        "descripcion": f"{schedule.hora_entrada.strftime('%H:%M')} a {schedule.hora_salida.strftime('%H:%M')}",
+                    }
+                    for schedule in schedules
+                ]
+            },
         }
     )
 

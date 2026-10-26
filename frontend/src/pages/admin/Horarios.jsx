@@ -41,6 +41,10 @@ const assignmentInitial = {
   tolerancia_regreso_almuerzo: 0,
 };
 
+function lunchIsIncomplete(form) {
+  return Boolean(form.hora_salida_almuerzo) !== Boolean(form.hora_regreso_almuerzo);
+}
+
 /**
  * Administra plantillas, asignaciones e historial de horarios individuales. Horarios.jsx.
  *
@@ -87,6 +91,8 @@ export default function Horarios() {
    * @returns {JSX.Element|Promise<unknown>|unknown} Resultado de la operacion o elemento renderizado.
    */
   function handleTemplateChange(event) {
+    setMessage('');
+    setError('');
     setTemplateForm((current) => ({
       ...current,
       [event.target.name]: event.target.value,
@@ -99,6 +105,8 @@ export default function Horarios() {
    * @returns {JSX.Element|Promise<unknown>|unknown} Resultado de la operacion o elemento renderizado.
    */
   function handleAssignmentChange(event) {
+    setMessage('');
+    setError('');
     const nextValue = event.target.value;
     setAssignment((current) => ({
       ...current,
@@ -121,6 +129,10 @@ export default function Horarios() {
     event.preventDefault();
     setError('');
     setMessage('');
+    if (lunchIsIncomplete(templateForm)) {
+      setError('Debe indicar la salida y el regreso de almuerzo.');
+      return;
+    }
     try {
       const response = isEditingTemplate
         ? await updatePlantilla(templateForm.id, templateForm)
@@ -177,6 +189,10 @@ export default function Horarios() {
     event.preventDefault();
     setError('');
     setMessage('');
+    if (assignment.modo === 'personalizado' && lunchIsIncomplete(assignment)) {
+      setError('Debe indicar la salida y el regreso de almuerzo.');
+      return;
+    }
 
     const payload =
       assignment.modo === 'plantilla'
@@ -321,7 +337,11 @@ export default function Horarios() {
                 <button
                   className="secondary-button"
                   type="button"
-                  onClick={() => setTemplateForm(templateFormInitial)}
+                  onClick={() => {
+                    setTemplateForm(templateFormInitial);
+                    setMessage('');
+                    setError('');
+                  }}
                 >
                   Cancelar
                 </button>

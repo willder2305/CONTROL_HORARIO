@@ -4,13 +4,14 @@ Agrupa la logica propia necesaria para esta responsabilidad sin exponer detalles
 """
 
 import getpass
+from collections import defaultdict
 from datetime import time
 
 import click
 from werkzeug.security import generate_password_hash
 
 from app import db
-from app.models import Administrador, PlantillaHorario
+from app.models import Administrador, HorarioTrabajador, PlantillaHorario
 
 
 def register_commands(app):
@@ -25,6 +26,7 @@ def register_commands(app):
     """
     app.cli.add_command(create_admin_command)
     app.cli.add_command(seed_schedules_command)
+    app.cli.add_command(audit_schedule_history_command)
 
 
 @click.command("crear-admin")
@@ -113,3 +115,78 @@ def seed_schedules_command():
 
     db.session.commit()
     click.echo(f"Plantillas iniciales creadas: {created}.")
+
+
+def schedule_identity(schedule):
+    """Construye una clave de igualdad exacta sin incluir datos biométricos."""
+    return (
+        schedule.trabajador_id,
+        schedule.plantilla_id,
+        schedule.hora_entrada,
+        schedule.hora_salida_almuerzo,
+        schedule.hora_regreso_almuerzo,
+        schedule.hora_salida,
+        schedule.tolerancia_entrada,
+        schedule.tolerancia_salida,
+        schedule.tolerancia_regreso_almuerzo,
+        schedule.fecha_inicio,
+        schedule.fecha_fin,
+    )
+
+
+@click.command("auditar-historial-horarios")
+def audit_schedule_history_command():
+    """Lista anomalías del historial sin modificar ningún registro."""
+    schedules = HorarioTrabajador.query.order_by(
+        HorarioTrabajador.trabajador_id.asc(),
+        HorarioTrabajador.fecha_inicio.asc(),
+        HorarioTrabajador.id.asc(),
+    ).all()
+
+    invalid_dates = [
+        schedule
+        for schedule in schedules
+        if schedule.fecha_fin is not None and schedule.fecha_fin < schedule.fecha_inicio
+    ]
+    by_identity = defaultdict(list)
+    by_worker = defaultdict(list)
+    for schedule in schedules:
+        by_identity[schedule_identity(schedule)].append(schedule)
+        by_worker[schedule.trabajador_id].append(schedule)
+
+    duplicates = [group for group in by_identity.values() if len(group) > 1]
+    overlaps = []
+    for worker_id, worker_schedules in by_worker.items():
+        previous = None
+        for schedule in worker_schedules:
+            if previous is not None and (
+                previous.fecha_fin is None or schedule.fecha_inicio <= previous.fecha_fin
+            ):
+                overlaps.append((worker_id, previous.id, schedule.id))
+            if previous is None or previous.fecha_fin is None or (
+                schedule.fecha_fin is not None and schedule.fecha_fin > previous.fecha_fin
+            ):
+                previous = schedule
+
+    click.echo(f"Registros analizados: {len(schedules)}")
+    click.echo(f"Fechas invertidas: {len(invalid_dates)}")
+    for schedule in invalid_dates:
+        click.echo(
+            f"  horario_id={schedule.id} trabajador_id={schedule.trabajador_id} "
+            f"inicio={schedule.fecha_inicio.isoformat()} fin={schedule.fecha_fin.isoformat()}"
+        )
+    click.echo(f"Grupos duplicados exactos: {len(duplicates)}")
+    for group in duplicates:
+        click.echo(
+            f"  trabajador_id={group[0].trabajador_id} horarios={','.join(str(item.id) for item in group)}"
+        )
+    click.echo(f"Solapamientos: {len(overlaps)}")
+    for worker_id, first_id, second_id in overlaps:
+        click.echo(
+            f"  trabajador_id={worker_id} horarios={first_id},{second_id}"
+        )
+
+    if invalid_dates or duplicates or overlaps:
+        raise click.ClickException(
+            "Auditoría con hallazgos. Revise el backup y corrija cada caso de forma controlada."
+        )

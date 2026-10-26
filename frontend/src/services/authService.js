@@ -28,3 +28,13 @@ export async function getCurrentAdmin() {
   const response = await api.get('/auth/me');
   return response.data;
 }
+
+export async function getSessionStatus() {
+  const response = await api.get('/auth/session');
+  return response.data;
+}
+
+export async function refreshSession() {
+  const response = await api.post('/auth/session/refresh');
+  return response.data;
+}

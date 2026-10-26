@@ -15,42 +15,63 @@ import { registrarMarcacionBiometrica } from '../services/marcacionService';
 function friendlyError(requestError) {
   const code = requestError.response?.data?.code;
   if (code === 'HUELLA_NO_RECONOCIDA') {
-    return 'Huella no reconocida. La huella no corresponde a ningun trabajador registrado.';
+    return 'Huella no reconocida. La huella no corresponde a ningún trabajador registrado.';
   }
   if (code === 'TEMPLATES_NO_DISPONIBLES' || code === 'SIN_HUELLAS_REGISTRADAS') {
     return 'No hay huellas disponibles para identificar. Verifique con el administrador.';
   }
   if (code === 'ERROR_CARGA_TEMPLATES' || code === 'TEMPLATES_INCOMPATIBLES') {
-    return 'No fue posible cargar las huellas registradas. Intente nuevamente o contacte al administrador.';
+    return 'No se pudieron preparar las huellas registradas. Intente nuevamente.';
   }
   if (code === 'CAPTURE_TIMEOUT') {
-    return 'No se detecto ninguna huella. Intente nuevamente.';
+    return 'No se detectó ninguna huella. Intente nuevamente.';
   }
-  if (code === 'BACKEND_NO_DISPONIBLE') {
-    return 'No se pudo conectar con el servidor. Verifique la conexion a Internet.';
+  if (code === 'BACKEND_OFFLINE' || code === 'BACKEND_NO_DISPONIBLE') {
+    return 'No se pudo conectar con el sistema.';
   }
-  if (code === 'LECTOR_NO_DISPONIBLE' || code === 'LECTOR_NO_DETECTADO') {
-    return 'Lector de huellas no disponible. Verifique la conexion del ZKTeco ZK9500.';
+  if (code === 'LECTOR_NO_DETECTADO') {
+    return 'Lector ZKTeco ZK9500 no detectado. Verifique la conexión USB.';
+  }
+  if (code === 'LECTOR_NO_DISPONIBLE') {
+    return 'Lector ZKTeco ZK9500 no disponible. Verifique la conexión USB.';
+  }
+  if (code === 'BACKEND_OFFLINE' || code === 'BACKEND_NO_DISPONIBLE') {
+    return 'No se pudo conectar con el sistema.';
+  }
+  if (code === 'AGENT_NO_AUTORIZADO' || code === 'AGENT_TOKEN_NO_CONFIGURADO') {
+    return 'El servicio biométrico no está autorizado. Solicite asistencia al administrador.';
+  }
+  if (code === 'TEMPLATES_NO_DISPONIBLES') {
+    return 'No hay huellas disponibles para identificar. Solicite el registro de su huella.';
+  }
+  if (code === 'ERROR_CARGA_TEMPLATES') {
+    return 'No se pudieron preparar las huellas registradas. Intente nuevamente.';
+  }
+  if (code === 'CAPTURE_TIMEOUT') {
+    return 'No se detectó ninguna huella. Intente nuevamente.';
+  }
+  if (code === 'ERROR_ZK9500' || code === 'DEVICE_STATUS_FAILED') {
+    return 'No se pudo completar la lectura en el ZKTeco ZK9500. Intente nuevamente.';
   }
   if (code === 'AGENT_OFFLINE' || (!requestError.response && requestError.request)) {
     return 'Servicio biometrico no disponible. Instale o inicie ControlHorarioBiometricAgent en esta computadora.';
   }
   if (code === 'HORARIO_NO_ASIGNADO') {
-    return 'No se puede realizar la marcacion. No tiene un horario asignado para esta jornada.';
+    return 'No se puede realizar la marcación. No tiene un horario asignado para esta jornada.';
   }
   if (code === 'TRABAJADOR_INACTIVO') {
-    return 'No se puede realizar la marcacion. Consulte con el administrador.';
+    return 'No se puede realizar la marcación. Consulte con el administrador.';
   }
   if (code === 'JORNADA_COMPLETADA') {
     return 'Jornada completada. Ya se registraron todas las marcaciones de esta jornada.';
   }
   if (code === 'MARCACION_RECIENTE') {
-    return 'La marcacion ya se esta procesando. Intente nuevamente en unos segundos.';
+    return 'La marcación ya se está procesando. Intente nuevamente en unos segundos.';
   }
   if (requestError.code === 'ECONNABORTED') {
-    return 'No se detecto ninguna huella. Intente nuevamente.';
+    return 'No se detectó ninguna huella. Intente nuevamente.';
   }
-  return requestError.response?.data?.message ?? 'No se pudo realizar la marcacion.';
+  return requestError.response?.data?.message ?? 'No se pudo realizar la marcación.';
 }
 
 /**
@@ -142,7 +163,7 @@ export default function Marcar() {
 
           {result && (
             <div className="success-message mark-result">
-              <strong>Marcacion realizada correctamente</strong>
+              <strong>Marcación realizada correctamente</strong>
               <span>Funcion: {result.tipo}</span>
               <span>Hora registrada: {result.hora}</span>
             </div>

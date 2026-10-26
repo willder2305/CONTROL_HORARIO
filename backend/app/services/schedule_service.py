@@ -5,6 +5,8 @@ Agrupa la logica propia necesaria para esta responsabilidad sin exponer detalles
 
 from datetime import datetime, timedelta
 
+from sqlalchemy import or_
+
 from app import db
 from app.models import HorarioTrabajador, PlantillaHorario
 
@@ -212,7 +214,7 @@ def build_template_payload(data):
     if not payload["nombre"]:
         errors["nombre"] = "El nombre es obligatorio."
     if bool(payload["hora_salida_almuerzo"]) != bool(payload["hora_regreso_almuerzo"]):
-        errors["almuerzo"] = "Configure ambas horas de almuerzo o deje ambas vacias."
+        errors["almuerzo"] = "Debe indicar la salida y el regreso de almuerzo."
     return payload, errors
 
 
@@ -279,30 +281,38 @@ def schedule_payload_from_assignment(data):
         }
 
     if bool(payload.get("hora_salida_almuerzo")) != bool(payload.get("hora_regreso_almuerzo")):
-        errors["almuerzo"] = "Configure ambas horas de almuerzo o deje ambas vacias."
+        errors["almuerzo"] = "Debe indicar la salida y el regreso de almuerzo."
 
     return payload, errors
 
 
-def close_previous_active_schedule(trabajador_id, fecha_inicio):
-    """
-    Implementa la responsabilidad de close previous active schedule dentro de este modulo.
+def _apply_schedule_payload(schedule, payload):
+    for field, value in payload.items():
+        if field != "fecha_inicio":
+            setattr(schedule, field, value)
 
-    Args:
-        trabajador_id: Dato utilizado por la operacion.
-        fecha_inicio: Dato utilizado por la operacion.
 
-    Returns:
-        Resultado de la operacion o respuesta HTTP correspondiente.
-    """
-    active_schedules = HorarioTrabajador.query.filter_by(
-        trabajador_id=trabajador_id,
-        activo=True,
-    ).all()
-    closing_date = fecha_inicio - timedelta(days=1)
-    for schedule in active_schedules:
-        schedule.fecha_fin = closing_date
-        schedule.activo = False
+def _schedule_covering_date(trabajador_id, fecha):
+    return (
+        HorarioTrabajador.query.filter(
+            HorarioTrabajador.trabajador_id == trabajador_id,
+            HorarioTrabajador.fecha_inicio < fecha,
+            or_(HorarioTrabajador.fecha_fin.is_(None), HorarioTrabajador.fecha_fin >= fecha),
+        )
+        .order_by(HorarioTrabajador.fecha_inicio.desc(), HorarioTrabajador.id.desc())
+        .first()
+    )
+
+
+def _next_schedule(trabajador_id, fecha):
+    return (
+        HorarioTrabajador.query.filter(
+            HorarioTrabajador.trabajador_id == trabajador_id,
+            HorarioTrabajador.fecha_inicio > fecha,
+        )
+        .order_by(HorarioTrabajador.fecha_inicio.asc(), HorarioTrabajador.id.asc())
+        .first()
+    )
 
 
 def assign_worker_schedule(trabajador_id, payload):
@@ -318,7 +328,44 @@ def assign_worker_schedule(trabajador_id, payload):
     Retorna:
         HorarioTrabajador creado.
     """
-    close_previous_active_schedule(trabajador_id, payload["fecha_inicio"])
-    schedule = HorarioTrabajador(trabajador_id=trabajador_id, activo=True, **payload)
+    fecha_inicio = payload["fecha_inicio"]
+    same_day_schedule = (
+        HorarioTrabajador.query.filter_by(
+            trabajador_id=trabajador_id,
+            fecha_inicio=fecha_inicio,
+        )
+        .order_by(HorarioTrabajador.id.desc())
+        .first()
+    )
+    if same_day_schedule:
+        # Un cambio efectivo el mismo dia reemplaza ese tramo: no crea un
+        # intervalo negativo ni duplica una fila de historial.
+        _apply_schedule_payload(same_day_schedule, payload)
+        if (
+            same_day_schedule.fecha_fin is not None
+            and same_day_schedule.fecha_fin < same_day_schedule.fecha_inicio
+        ):
+            next_schedule = _next_schedule(trabajador_id, fecha_inicio)
+            same_day_schedule.fecha_fin = (
+                next_schedule.fecha_inicio - timedelta(days=1)
+                if next_schedule
+                else None
+            )
+        same_day_schedule.activo = same_day_schedule.fecha_fin is None
+        return same_day_schedule, False
+
+    previous = _schedule_covering_date(trabajador_id, fecha_inicio)
+    if previous:
+        previous.fecha_fin = fecha_inicio - timedelta(days=1)
+        previous.activo = False
+
+    next_schedule = _next_schedule(trabajador_id, fecha_inicio)
+    fecha_fin = next_schedule.fecha_inicio - timedelta(days=1) if next_schedule else None
+    schedule = HorarioTrabajador(
+        trabajador_id=trabajador_id,
+        fecha_fin=fecha_fin,
+        activo=fecha_fin is None,
+        **payload,
+    )
     db.session.add(schedule)
-    return schedule
+    return schedule, True
